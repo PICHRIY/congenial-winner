@@ -1,0 +1,3143 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ប្រព័ន្ធគ្រប់គ្រងសិស្ស និងការបង់ថ្លៃសិក្សា</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Noto Sans Khmer, Battambang, Kantumruy Pro & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Inter:wght@400;500;600;700&family=Kantumruy+Pro:wght@300;400;500;600;700&family=Noto+Sans+Khmer:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS (XLSX) for Excel Export & Import -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- html2canvas & jsPDF for Direct A4 PDF Generation in Preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Kantumruy Pro', 'Noto Sans Khmer', 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Print Styles for Crisp Vector A4 Portrait (1-Page Centered, No Left Clipping) */
+        @page {
+            size: A4 portrait;
+            margin: 10mm 10mm 10mm 10mm;
+        }
+
+        @media print {
+            html, body {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+                font-family: 'Noto Sans Khmer', 'Kantumruy Pro', 'Battambang', sans-serif !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                overflow: visible !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            main {
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 auto !important;
+            }
+            section {
+                border: none !important;
+                box-shadow: none !important;
+            }
+            #reportsTabContent {
+                padding: 0 !important;
+            }
+
+            /* Individual Student PDF Modal Print Isolation */
+            body.printing-student-pdf header,
+            body.printing-student-pdf main,
+            body.printing-student-pdf footer,
+            body.printing-student-pdf #studentModal,
+            body.printing-student-pdf #excelImportModal,
+            body.printing-student-pdf #deleteModal,
+            body.printing-student-pdf #loginOverlay,
+            body.printing-student-pdf #loadingOverlay,
+            body.printing-student-pdf #toastContainer {
+                display: none !important;
+            }
+            body.printing-student-pdf #studentPdfModal {
+                position: static !important;
+                inset: auto !important;
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                background: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 auto !important;
+                overflow: visible !important;
+            }
+            body.printing-student-pdf #studentPdfModalDialog {
+                position: static !important;
+                box-shadow: none !important;
+                max-width: 190mm !important;
+                width: 100% !important;
+                border: none !important;
+                border-radius: 0 !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+            }
+            body.printing-student-pdf #studentPdfModalBody {
+                max-height: none !important;
+                overflow: visible !important;
+                padding: 0 !important;
+                margin: 0 auto !important;
+                width: 100% !important;
+            }
+            .print-only-header {
+                display: block !important;
+            }
+            .shadow-xs, .shadow-sm, .shadow-md, .shadow-xl, .shadow-2xl {
+                box-shadow: none !important;
+            }
+            .overflow-x-auto {
+                overflow: visible !important;
+            }
+
+            /* Single-Page A4 Proportions & Typography */
+            .pdf-letterhead {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                padding-bottom: 6px !important;
+                margin-bottom: 8px !important;
+                border-bottom: 2px solid #1e293b !important;
+            }
+            .pdf-profile-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+                padding: 8px 10px !important;
+                margin-bottom: 8px !important;
+                border: 1px solid #cbd5e1 !important;
+                border-radius: 8px !important;
+            }
+            .pdf-summary-grid {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 8px !important;
+                margin-bottom: 8px !important;
+            }
+            .pdf-summary-grid > div {
+                padding: 6px 8px !important;
+                border-radius: 8px !important;
+            }
+            table {
+                width: 100% !important;
+                max-width: 100% !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+                font-size: 9.5px !important;
+                line-height: 1.35 !important;
+                page-break-inside: avoid !important;
+            }
+            tr {
+                page-break-inside: avoid !important;
+            }
+            th, td {
+                border: 1px solid #94a3b8 !important;
+                padding: 3.5px 5px !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                white-space: normal !important;
+                vertical-align: middle !important;
+            }
+            th {
+                background-color: #f1f5f9 !important;
+                font-weight: 700 !important;
+                font-size: 9px !important;
+            }
+            .pdf-status-pill {
+                display: inline-block !important;
+                padding: 1.5px 5px !important;
+                font-size: 8.5px !important;
+                line-height: 1.2 !important;
+                white-space: nowrap !important;
+            }
+            .pdf-signature-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 24px !important;
+                padding-top: 10px !important;
+                margin-top: 6px !important;
+                page-break-inside: avoid !important;
+            }
+            .pdf-signature-space {
+                height: 30px !important;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0 no-print"></div>
+
+    <!-- Login Screen Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 z-50 flex items-center justify-center p-4 overflow-y-auto no-print">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200/80 my-8">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-7 text-center text-white relative overflow-hidden">
+                <div class="w-16 h-16 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center mx-auto text-3xl shadow-lg mb-3">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <h2 class="text-xl font-bold tracking-tight">ចូលប្រើប្រាស់ប្រព័ន្ធគ្រប់គ្រង</h2>
+                <p class="text-xs text-blue-100 mt-1">មជ្ឈមណ្ឌលបណ្តុះបណ្តាលភាសា និងកុំព្យូទ័រ</p>
+            </div>
+
+            <form id="loginForm" class="p-6 sm:p-8 space-y-5">
+                <div id="loginErrorBox" class="hidden bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-xs font-medium flex items-center gap-2">
+                    <i class="fa-solid fa-circle-exclamation text-sm shrink-0"></i>
+                    <span id="loginErrorText">ឈ្មោះអ្នកប្រើប្រាស់ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវទេ!</span>
+                </div>
+
+                <div>
+                    <label for="loginUsername" class="block text-sm font-semibold text-slate-700 mb-1.5">ឈ្មោះអ្នកប្រើប្រាស់ (Username)</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="text" id="loginUsername" required autocomplete="username" placeholder="បញ្ចូលឈ្មោះអ្នកប្រើប្រាស់..." class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="loginPassword" class="block text-sm font-semibold text-slate-700 mb-1.5">ពាក្យសម្ងាត់ (Password)</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="password" id="loginPassword" required autocomplete="current-password" placeholder="••••••••" class="w-full pl-10 pr-11 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        <button type="button" id="togglePwdBtn" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1" title="បង្ហាញ/លាក់ពាក្យសម្ងាត់">
+                            <i id="loginEyeIcon" class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs">
+                    <label class="flex items-center gap-2 cursor-pointer select-none text-slate-600">
+                        <input type="checkbox" id="rememberSessionChk" checked class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                        <span>ចងចាំការចូលប្រើប្រាស់</span>
+                    </label>
+                    <button type="button" id="fillDemoBtn" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline">
+                        បំពេញគណនីគំរូ (Demo)
+                    </button>
+                </div>
+
+                <button type="submit" id="loginSubmitBtn" class="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-sm shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>ចូលប្រើប្រាស់ប្រព័ន្ធ (Login)</span>
+                </button>
+
+                <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-center text-xs text-slate-500 space-y-0.5">
+                    <p class="font-semibold text-slate-700">ព័ត៌មានគណនីអ្នកគ្រប់គ្រងលំនាំដើម៖</p>
+                    <p>Username: <span class="font-mono font-bold text-blue-700">admin</span> &nbsp;|&nbsp; Password: <span class="font-mono font-bold text-blue-700">admin123</span></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/50 z-40 hidden items-center justify-center no-print">
+        <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-3">
+            <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-sm font-medium text-slate-700">កំពុងភ្ជាប់ទៅកាន់ប្រព័ន្ធទិន្នន័យ...</p>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap items-center justify-between py-3.5 gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-md">
+                        <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">ប្រព័ន្ធគ្រប់គ្រងសិស្ស និងការបង់ថ្លៃសិក្សា</h1>
+                        <div class="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                            <span id="cloudStatusDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span id="cloudStatusText">រក្សាទុកទិន្នន័យស្វ័យប្រវត្តិ (Cloud)</span>
+                            <span class="hidden md:inline text-slate-300">|</span>
+                            <span id="loggedInUserBadge" class="hidden md:inline text-blue-700 font-semibold">Admin</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                    <button id="headerExportStudentsBtn" type="button" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-medium px-3 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2" title="ទាញយកបញ្ជីសិស្សទាំងអស់ជា Excel">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span class="hidden md:inline">នាំចេញ Excel</span>
+                    </button>
+
+                    <button id="headerImportExcelBtn" type="button" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-medium px-3 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2" title="បញ្ចូលទិន្នន័យសិស្សពីឯកសារ Excel">
+                        <i class="fa-solid fa-file-import"></i>
+                        <span class="hidden md:inline">នាំចូល Excel</span>
+                    </button>
+
+                    <button id="headerAddStudentBtn" type="button" class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-2 text-xs sm:text-sm">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>ចុះឈ្មោះសិស្សថ្មី</span>
+                    </button>
+
+                    <button id="logoutBtn" type="button" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-medium px-3.5 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2" title="ចាកចេញពីប្រព័ន្ធ">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span class="hidden sm:inline">ចាកចេញ</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Navigation Tabs & Global Filters -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <!-- Top Tabs Header -->
+            <div class="border-b border-slate-200 px-4 sm:px-6 pt-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 bg-slate-50/60 no-print">
+                <!-- 4 Main Tabs -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-2 xl:pb-0">
+                    <button id="tabDashboardBtn" type="button" class="px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl border-b-2 border-blue-600 text-blue-700 bg-white transition-all whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span>ផ្ទាំងគ្រប់គ្រង (Dashboard)</span>
+                    </button>
+                    <button id="tabPaymentsBtn" type="button" class="px-3.5 py-2.5 text-xs sm:text-sm font-medium rounded-t-xl border-b-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-all whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <span>តាមដានការបង់ប្រាក់</span>
+                    </button>
+                    <button id="tabStudentsBtn" type="button" class="px-3.5 py-2.5 text-xs sm:text-sm font-medium rounded-t-xl border-b-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-all whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-address-book"></i>
+                        <span>បញ្ជីឈ្មោះសិស្ស</span>
+                    </button>
+                    <button id="tabReportsBtn" type="button" class="px-3.5 py-2.5 text-xs sm:text-sm font-medium rounded-t-xl border-b-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-all whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>របាយការណ៍ & Excel</span>
+                    </button>
+                </div>
+
+                <!-- Month Picker & Search Controls -->
+                <div class="flex flex-wrap items-center gap-2 pb-3 xl:pb-2">
+                    <div id="monthFilterWrapper" class="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-2xs">
+                        <i class="fa-regular fa-calendar text-blue-600 text-sm"></i>
+                        <label for="monthSelector" class="text-xs font-medium text-slate-600 whitespace-nowrap">ខែ/ឆ្នាំ៖</label>
+                        <input type="month" id="monthSelector" class="text-xs sm:text-sm font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer">
+                    </div>
+
+                    <select id="paymentStatusFilter" class="hidden bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="all">ស្ថានភាព៖ ទាំងអស់</option>
+                        <option value="Unpaid">មិនទាន់បង់ (Unpaid)</option>
+                        <option value="Paid">បានបង់រួច (Paid)</option>
+                    </select>
+
+                    <select id="courseFilter" class="hidden bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="all">មុខវិជ្ជា៖ ទាំងអស់</option>
+                        <option value="English">ភាសាអង់គ្លេស</option>
+                        <option value="Chinese">ភាសាចិន</option>
+                        <option value="Computer">កុំព្យូទ័រ</option>
+                    </select>
+
+                    <div id="searchBoxWrapper" class="hidden relative flex-1 sm:flex-initial min-w-[190px]">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="searchInput" placeholder="ស្វែងរកឈ្មោះ ឬទូរស័ព្ទ..." class="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 0: Dashboard Overview -->
+            <div id="dashboardTabContent" class="p-5 sm:p-6 space-y-6">
+                <!-- 4 Key Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-slate-50/70 rounded-2xl p-5 border border-slate-200/80 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">សិស្សសរុបទាំងអស់</p>
+                            <h3 id="statTotalStudents" class="text-2xl font-bold text-slate-900 mt-1">0 នាក់</h3>
+                            <p class="text-xs text-slate-400 mt-1">ចុះឈ្មោះក្នុងប្រព័ន្ធ</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50/70 rounded-2xl p-5 border border-slate-200/80">
+                        <p class="text-xs font-medium text-slate-500 mb-2">ចំនួនសិស្សតាមមុខវិជ្ជា</p>
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-1.5 text-slate-700 font-medium">
+                                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> ភាសាអង់គ្លេស
+                                </span>
+                                <span id="statEnglishCount" class="font-bold text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-md">0 នាក់</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-1.5 text-slate-700 font-medium">
+                                    <span class="w-2 h-2 rounded-full bg-rose-500"></span> ភាសាចិន
+                                </span>
+                                <span id="statChineseCount" class="font-bold text-rose-700 bg-rose-100/80 px-2 py-0.5 rounded-md">0 នាក់</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-1.5 text-slate-700 font-medium">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> កុំព្យូទ័រ
+                                </span>
+                                <span id="statComputerCount" class="font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">0 នាក់</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50/70 rounded-2xl p-5 border border-slate-200/80 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">ប្រាក់បានបង់ប្រចាំខែ (<span id="statMonthLabel1">-</span>)</p>
+                            <h3 id="statPaidAmount" class="text-2xl font-bold text-emerald-600 mt-1">$0.00</h3>
+                            <p id="statExpectedAmount" class="text-xs text-slate-400 mt-1">សរុបត្រូវប្រមូល៖ $0.00</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-sack-dollar"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50/70 rounded-2xl p-5 border border-slate-200/80 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">មិនទាន់បង់ប្រាក់ (<span id="statMonthLabel2">-</span>)</p>
+                            <h3 id="statUnpaidCount" class="text-2xl font-bold text-amber-600 mt-1">0 មុខវិជ្ជា</h3>
+                            <p id="statCollectionRate" class="text-xs text-slate-400 mt-1">អត្រាបង់ប្រាក់៖ 0%</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Access & Unpaid Alert List on Dashboard -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Unpaid Students Quick Action Card -->
+                    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                        <div class="px-5 py-3.5 bg-amber-50/70 border-b border-amber-200/70 flex items-center justify-between">
+                            <h4 class="text-sm font-bold text-amber-900 flex items-center gap-2">
+                                <i class="fa-solid fa-bell text-amber-600"></i>
+                                <span>បញ្ជីសិស្សមិនទាន់បង់ប្រាក់ប្រចាំខែ (<span id="dashUnpaidMonthLabel">-</span>)</span>
+                            </h4>
+                            <button type="button" id="dashViewAllPaymentsBtn" class="text-xs font-semibold text-blue-700 hover:underline">
+                                មើលតារាងទាំងអស់ →
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
+                                        <th class="py-2.5 px-4">ឈ្មោះសិស្ស</th>
+                                        <th class="py-2.5 px-4">មុខវិជ្ជា</th>
+                                        <th class="py-2.5 px-4">ថ្ងៃត្រូវបង់លុយ</th>
+                                        <th class="py-2.5 px-4">ថ្លៃសិក្សា</th>
+                                        <th class="py-2.5 px-4 text-right">សកម្មភាព</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashUnpaidTableBody" class="divide-y divide-slate-100">
+                                    <!-- Injected dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Course Enrollment Distribution Card -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800 mb-1">សមាមាត្រសិស្សតាមមុខវិជ្ជា</h4>
+                            <p class="text-xs text-slate-500">ចំនួនការចុះឈ្មោះរៀនសរុបតាមផ្នែកនីមួយៗ</p>
+                            <div id="dashSubjectProgressContainer" class="mt-4 space-y-4">
+                                <!-- Progress bars injected dynamically -->
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
+                            <button type="button" id="dashQuickAddBtn" class="py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-user-plus"></i> ចុះឈ្មោះសិស្ស
+                            </button>
+                            <button type="button" id="dashQuickReportBtn" class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-file-excel text-emerald-600"></i> របាយការណ៍
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: Monthly Tuition Tracking Table -->
+            <div id="paymentsTabContent" class="hidden p-0">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                <th class="py-3.5 px-4">ល.រ</th>
+                                <th class="py-3.5 px-4">ឈ្មោះសិស្ស</th>
+                                <th class="py-3.5 px-4">មុខវិជ្ជាសិក្សា</th>
+                                <th class="py-3.5 px-4">ថ្ងៃចូលរៀន</th>
+                                <th class="py-3.5 px-4">ថ្ងៃត្រូវបង់លុយ</th>
+                                <th class="py-3.5 px-4">តម្លៃសិក្សា/ខែ</th>
+                                <th class="py-3.5 px-4">ស្ថានភាពបង់ប្រាក់</th>
+                                <th class="py-3.5 px-4">កាលបរិច្ឆេទបង់ជាក់ស្តែង</th>
+                                <th class="py-3.5 px-4 text-right">សកម្មភាព</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsTableBody" class="divide-y divide-slate-100 text-sm">
+                            <!-- Rows injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="paymentsEmptyState" class="hidden py-12 px-4 text-center">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-2xl mb-3">
+                        <i class="fa-regular fa-folder-open"></i>
+                    </div>
+                    <h4 class="text-base font-semibold text-slate-700">មិនមានទិន្នន័យត្រូវបង្ហាញទេ</h4>
+                    <p class="text-xs text-slate-500 mt-1">សូមចុះឈ្មោះសិស្សថ្មី ឬប្តូរលក្ខខណ្ឌស្វែងរកខាងលើ។</p>
+                </div>
+            </div>
+
+            <!-- TAB 2: All Students Directory Table -->
+            <div id="studentsTabContent" class="hidden p-0">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                <th class="py-3.5 px-4">ល.រ</th>
+                                <th class="py-3.5 px-4">ព័ត៌មានសិស្ស</th>
+                                <th class="py-3.5 px-4">លេខទូរស័ព្ទ</th>
+                                <th class="py-3.5 px-4">ថ្ងៃចូលរៀន</th>
+                                <th class="py-3.5 px-4">ថ្ងៃត្រូវបង់លុយ</th>
+                                <th class="py-3.5 px-4">មុខវិជ្ជាដែលបានចុះឈ្មោះ (១-៣ មុខវិជ្ជា)</th>
+                                <th class="py-3.5 px-4">សរុបថ្លៃសិក្សា/ខែ</th>
+                                <th class="py-3.5 px-4 text-right">គ្រប់គ្រង</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody" class="divide-y divide-slate-100 text-sm">
+                            <!-- Rows injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="studentsEmptyState" class="hidden py-12 px-4 text-center">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-2xl mb-3">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <h4 class="text-base font-semibold text-slate-700">មិនទាន់មានសិស្សចុះឈ្មោះនៅឡើយទេ</h4>
+                    <p class="text-xs text-slate-500 mt-1">ចុចប៊ូតុង "ចុះឈ្មោះសិស្សថ្មី" ដើម្បីចាប់ផ្តើមបញ្ចូលទិន្នន័យសិស្ស។</p>
+                </div>
+            </div>
+
+            <!-- TAB 3: Monthly & Annual Reports + Excel Management -->
+            <div id="reportsTabContent" class="hidden p-5 sm:p-6 space-y-6">
+                <div class="hidden print-only-header text-center border-b-2 border-slate-800 pb-4 mb-4">
+                    <h2 class="text-xl font-bold">របាយការណ៍ប្រមូលថ្លៃសិក្សាប្រចាំខែ</h2>
+                    <p id="printReportSubtitle" class="text-sm text-slate-600 mt-1">មជ្ឈមណ្ឌលបណ្តុះបណ្តាលភាសា និងកុំព្យូទ័រ</p>
+                </div>
+
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 no-print">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-file-contract text-blue-600"></i>
+                            <span>របាយការណ៍បង់ប្រាក់ប្រចាំខែ៖ <span id="reportHeaderMonthTitle" class="text-blue-700">-</span></span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">ពិនិត្យសង្ខេបចំណូលតាមមុខវិជ្ជា ទាញយកជាឯកសារ Excel ឬបោះពុម្ពរបាយការណ៍ផ្លូវការ។</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="exportMonthlyExcelBtn" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3.5 py-2 rounded-xl text-xs sm:text-sm shadow-xs transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-file-excel"></i>
+                            <span>ទាញយករបាយការណ៍ខែនេះ (Excel)</span>
+                        </button>
+
+                        <button id="exportAnnualExcelBtn" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3.5 py-2 rounded-xl text-xs sm:text-sm shadow-xs transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-table"></i>
+                            <span>របាយការណ៍ប្រចាំឆ្នាំ (Excel)</span>
+                        </button>
+
+                        <button id="printMonthlyReportBtn" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-3.5 py-2 rounded-xl text-xs sm:text-sm shadow-xs transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-print"></i>
+                            <span>បោះពុម្ពរបាយការណ៍</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Subject-by-Subject Monthly Breakdown Table -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                    <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <h4 class="text-sm font-bold text-slate-800">១. តារាងសង្ខេបការបង់ប្រាក់តាមមុខវិជ្ជាប្រចាំខែ (<span id="reportSubtableMonth">-</span>)</h4>
+                        <span class="text-xs text-slate-500">រូបិយប័ណ្ណ៖ ដុល្លារអាមេរិក (USD)</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/70 border-b border-slate-200 text-xs font-semibold text-slate-600">
+                                    <th class="py-3 px-4">មុខវិជ្ជាសិក្សា</th>
+                                    <th class="py-3 px-4 text-center">ចំនួនសិស្សរៀន</th>
+                                    <th class="py-3 px-4 text-center">បានបង់រួច (នាក់)</th>
+                                    <th class="py-3 px-4 text-center">មិនទាន់បង់ (នាក់)</th>
+                                    <th class="py-3 px-4 text-right">ទឹកប្រាក់ត្រូវប្រមូលសរុប</th>
+                                    <th class="py-3 px-4 text-right">ទឹកប្រាក់បានបង់រួច</th>
+                                    <th class="py-3 px-4 text-right">ទឹកប្រាក់នៅជំពាក់</th>
+                                    <th class="py-3 px-4 text-center">អត្រាប្រមូលប្រាក់</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subjectReportTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                            <tfoot id="subjectReportTableFoot" class="bg-blue-50/60 border-t-2 border-slate-300 font-bold text-sm text-slate-900"></tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Detailed Monthly Student Payment Roster -->
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                    <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                        <h4 class="text-sm font-bold text-slate-800">២. បញ្ជីឈ្មោះសិស្ស និងស្ថានភាពបង់ប្រាក់លម្អិតប្រចាំខែ (<span id="reportDetailMonth">-</span>)</h4>
+                        <div class="flex items-center gap-2 no-print">
+                            <select id="reportDetailStatusFilter" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-700">
+                                <option value="all">បង្ហាញ៖ ទាំងអស់</option>
+                                <option value="Paid">បង្ហាញតែ៖ បានបង់ប្រាក់រួច</option>
+                                <option value="Unpaid">បង្ហាញតែ៖ មិនទាន់បង់ប្រាក់</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/70 border-b border-slate-200 text-xs font-semibold text-slate-600">
+                                    <th class="py-2.5 px-3">ល.រ</th>
+                                    <th class="py-2.5 px-3">ឈ្មោះសិស្ស</th>
+                                    <th class="py-2.5 px-3">លេខទូរស័ព្ទ</th>
+                                    <th class="py-2.5 px-3">មុខវិជ្ជា</th>
+                                    <th class="py-2.5 px-3">ថ្ងៃចូលរៀន</th>
+                                    <th class="py-2.5 px-3">ថ្ងៃត្រូវបង់លុយ</th>
+                                    <th class="py-2.5 px-3 text-right">ថ្លៃសិក្សា</th>
+                                    <th class="py-2.5 px-3 text-center">ស្ថានភាព</th>
+                                    <th class="py-2.5 px-3">ថ្ងៃបង់ប្រាក់</th>
+                                    <th class="py-2.5 px-3 text-center no-print">របាយការណ៍ PDF</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportDetailTableBody" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Annual 12-Month Overview Chart -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 no-print">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800">៣. ក្រាហ្វិកប្រៀបធៀបចំណូលប្រចាំឆ្នាំ <span id="annualChartYearLabel">2026</span> (១២ ខែ)</h4>
+                            <p class="text-xs text-slate-500">បង្ហាញទឹកប្រាក់បានបង់រួច (ពណ៌បៃតង) ធៀបនឹងទឹកប្រាក់នៅជំពាក់ (ពណ៌ទឹកក្រូច) ក្នុងខែនីមួយៗ</p>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs">
+                            <span class="flex items-center gap-1.5 font-medium text-slate-700"><span class="w-3 h-3 rounded-xs bg-emerald-500"></span> បានបង់រួច</span>
+                            <span class="flex items-center gap-1.5 font-medium text-slate-700"><span class="w-3 h-3 rounded-xs bg-amber-400"></span> មិនទាន់បង់</span>
+                        </div>
+                    </div>
+
+                    <div id="annualBarChart" class="grid grid-cols-6 sm:grid-cols-12 gap-2 pt-4 pb-2 items-end h-48 border-b border-slate-200"></div>
+                </div>
+
+                <!-- Excel Backup & Import Utility Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 no-print">
+                    <div class="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 flex items-start justify-between gap-4">
+                        <div class="space-y-1">
+                            <h5 class="text-sm font-bold text-emerald-900 flex items-center gap-2">
+                                <i class="fa-solid fa-download text-emerald-600"></i>
+                                <span>រក្សាទុកទិន្នន័យសិស្សទាំងអស់ (Excel Backup)</span>
+                            </h5>
+                            <p class="text-xs text-emerald-800/80">ទាញយកបញ្ជីឈ្មោះសិស្ស មុខវិជ្ជាសិក្សា និងតម្លៃសិក្សាទាំងអស់ទុកក្នុងកុំព្យូទ័រជាឯកសារ .xlsx។</p>
+                        </div>
+                        <button id="cardExportAllStudentsBtn" type="button" class="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl shadow-xs transition-all">
+                            នាំចេញ (.xlsx)
+                        </button>
+                    </div>
+
+                    <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 flex items-start justify-between gap-4">
+                        <div class="space-y-1">
+                            <h5 class="text-sm font-bold text-amber-900 flex items-center gap-2">
+                                <i class="fa-solid fa-upload text-amber-600"></i>
+                                <span>បញ្ចូលទិន្នន័យសិស្សពីឯកសារ Excel</span>
+                            </h5>
+                            <p class="text-xs text-amber-800/80">នាំចូលបញ្ជីឈ្មោះសិស្សថ្មីៗពីឯកសារ Excel (.xlsx ឬ .csv) ចូលទៅក្នុងប្រព័ន្ធយ៉ាងរហ័ស។</p>
+                        </div>
+                        <button id="cardImportExcelBtn" type="button" class="shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl shadow-xs transition-all">
+                            នាំចូល Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <p>© 2026 ប្រព័ន្ធគ្រប់គ្រងសិស្ស និងការបង់ថ្លៃសិក្សា (ភាសាចិន • ភាសាអង់គ្លេស • កុំព្យូទ័រ)</p>
+            <p>រក្សាទុកទិន្នន័យដោយស្វ័យប្រវត្តិ (Cloud & Local Sync)</p>
+        </div>
+    </footer>
+
+    <!-- Modal: Add / Edit Student & Multi-Subject Enrollment (1 to 3 subjects) -->
+    <div id="studentModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden items-center justify-center p-4 overflow-y-auto no-print">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 my-8">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <i class="fa-solid fa-user-pen"></i>
+                    </div>
+                    <h3 id="modalTitle" class="text-base font-bold text-slate-900">ចុះឈ្មោះសិស្សថ្មី</h3>
+                </div>
+                <button id="closeStudentModalBtn" type="button" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/70 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="studentForm" class="p-6 space-y-5">
+                <input type="hidden" id="editStudentId">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">ឈ្មោះពេញរបស់សិស្ស <span class="text-rose-500">*</span></label>
+                        <input type="text" id="studentFullName" required placeholder="ឧទាហរណ៍៖ សុខ សុវណ្ណារ៉ា" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">ភេទ</label>
+                        <select id="studentGender" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="ប្រុស">ប្រុស</option>
+                            <option value="ស្រី">ស្រី</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">លេខទូរស័ព្ទទំនាក់ទំនង</label>
+                        <input type="tel" id="studentPhone" placeholder="ឧ. 012 345 678" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">ថ្ងៃចូលរៀន (Enrollment Date) <span class="text-rose-500">*</span></label>
+                        <input type="date" id="studentEnrollDate" required class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">ថ្ងៃត្រូវបង់លុយប្រចាំខែ (ទី ១-៣១) <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-semibold">រៀងរាល់ថ្ងៃទី</span>
+                            <input type="number" id="studentDueDay" min="1" max="31" required placeholder="15" class="w-full pl-24 pr-8 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">នៃខែ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-xs font-semibold text-slate-700">ជ្រើសរើសមុខវិជ្ជាសិក្សា (អាចរើសពី ១ ដល់ ៣ មុខវិជ្ជា) <span class="text-rose-500">*</span></label>
+                        <span id="selectedSubjectCountBadge" class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">បានរើស៖ 0 មុខវិជ្ជា</span>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        <div class="border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3 hover:border-indigo-300 transition-colors bg-slate-50/50">
+                            <label class="flex items-center gap-3 cursor-pointer flex-1 select-none">
+                                <input type="checkbox" id="chkEnglish" class="subject-checkbox w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                                <div>
+                                    <span class="text-sm font-semibold text-slate-800 block">ភាសាអង់គ្លេស (English)</span>
+                                    <span class="text-xs text-slate-500">ថ្នាក់ភាសាអង់គ្លេសទូទៅ</span>
+                                </div>
+                            </label>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs text-slate-500">$</span>
+                                <input type="number" id="feeEnglish" value="15" min="0" step="0.5" class="w-20 px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-right bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3 hover:border-rose-300 transition-colors bg-slate-50/50">
+                            <label class="flex items-center gap-3 cursor-pointer flex-1 select-none">
+                                <input type="checkbox" id="chkChinese" class="subject-checkbox w-4 h-4 text-rose-600 rounded focus:ring-rose-500">
+                                <div>
+                                    <span class="text-sm font-semibold text-slate-800 block">ភាសាចិន (Chinese)</span>
+                                    <span class="text-xs text-slate-500">ថ្នាក់ភាសាចិននិយាយ និងសរសេរ</span>
+                                </div>
+                            </label>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs text-slate-500">$</span>
+                                <input type="number" id="feeChinese" value="15" min="0" step="0.5" class="w-20 px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-right bg-white focus:outline-none focus:ring-2 focus:ring-rose-500">
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3 hover:border-emerald-300 transition-colors bg-slate-50/50">
+                            <label class="flex items-center gap-3 cursor-pointer flex-1 select-none">
+                                <input type="checkbox" id="chkComputer" class="subject-checkbox w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+                                <div>
+                                    <span class="text-sm font-semibold text-slate-800 block">កុំព្យូទ័រ (Computer)</span>
+                                    <span class="text-xs text-slate-500">រដ្ឋបាល Office / Design</span>
+                                </div>
+                            </label>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs text-slate-500">$</span>
+                                <input type="number" id="feeComputer" value="20" min="0" step="0.5" class="w-20 px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-right bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 p-3 bg-blue-50/80 border border-blue-100 rounded-xl flex items-center justify-between">
+                        <span class="text-xs font-medium text-blue-800">សរុបថ្លៃសិក្សាប្រចាំខែរបស់សិស្សម្នាក់នេះ៖</span>
+                        <span id="modalTotalFeePreview" class="text-base font-bold text-blue-700">$0.00 / ខែ</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                    <button id="cancelStudentModalBtn" type="button" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors">
+                        បោះបង់
+                    </button>
+                    <button type="submit" id="saveStudentBtn" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>រក្សាទុកទិន្នន័យ</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Import Students from Excel (.xlsx / .csv) -->
+    <div id="excelImportModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden items-center justify-center p-4 overflow-y-auto no-print">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 my-8">
+            <div class="px-6 py-4 bg-amber-50 border-b border-amber-200/80 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                        <i class="fa-solid fa-file-excel"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">នាំចូលទិន្នន័យសិស្សពីឯកសារ Excel</h3>
+                        <p class="text-xs text-slate-600">គាំទ្រឯកសារប្រភេទ .xlsx, .xls, និង .csv</p>
+                    </div>
+                </div>
+                <button id="closeExcelImportModalBtn" type="button" class="w-8 h-8 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-amber-200/50 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-5">
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-bold text-slate-800">ជំហានទី ១៖ ទាញយកទម្រង់គំរូ Excel (Template)</p>
+                        <p class="text-xs text-slate-500 mt-0.5">ប្រើទម្រង់គំរូនេះដើម្បីបំពេញឈ្មោះសិស្ស និងតម្លៃមុខវិជ្ជាឱ្យបានត្រឹមត្រូវ។</p>
+                    </div>
+                    <button id="downloadExcelTemplateBtn" type="button" class="shrink-0 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl shadow-2xs flex items-center gap-2">
+                        <i class="fa-solid fa-file-arrow-down text-emerald-600"></i>
+                        <span>ទាញយកគំរូ Excel</span>
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-800 mb-2">ជំហានទី ២៖ ជ្រើសរើសឯកសារ Excel ពីកុំព្យូទ័ររបស់អ្នក</label>
+                    <label for="excelFileInput" class="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/70 hover:bg-blue-50/40 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all text-center">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-blue-500 mb-2"></i>
+                        <span class="text-sm font-semibold text-slate-700">ចុចទីនេះដើម្បីជ្រើសរើសឯកសារ Excel (.xlsx)</span>
+                        <span id="selectedExcelFileName" class="text-xs text-slate-500 mt-1">មិនទាន់បានជ្រើសរើសឯកសារនៅឡើយទេ</span>
+                        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
+                    </label>
+                </div>
+
+                <div id="excelPreviewContainer" class="hidden space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span id="excelPreviewCountText">រកឃើញទិន្នន័យសិស្សចំនួន 0 នាក់</span>
+                        </span>
+                    </div>
+                    <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-xl">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead class="bg-slate-100 sticky top-0 text-slate-700 font-semibold">
+                                <tr>
+                                    <th class="py-2 px-3">ឈ្មោះសិស្ស</th>
+                                    <th class="py-2 px-3">ភេទ</th>
+                                    <th class="py-2 px-3">ទូរស័ព្ទ</th>
+                                    <th class="py-2 px-3">មុខវិជ្ជា & តម្លៃ/ខែ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="excelPreviewTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                    <button id="cancelExcelImportBtn" type="button" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50">
+                        បោះបង់
+                    </button>
+                    <button id="confirmExcelImportBtn" type="button" disabled class="px-5 py-2 rounded-xl bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-blue-700 text-white text-sm font-medium shadow-xs flex items-center gap-2">
+                        <i class="fa-solid fa-database"></i>
+                        <span>បញ្ចូលទៅក្នុងប្រព័ន្ធ</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Individual Student Payment Statement (A4 PDF Report) -->
+    <div id="studentPdfModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div id="studentPdfModalDialog" class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200 my-6">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 no-print">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
+                        <i class="fa-solid fa-file-pdf"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">របាយការណ៍ប្រវត្តិបង់ប្រាក់របស់សិស្ស (PDF)</h3>
+                        <p class="text-xs text-slate-500">ពិនិត្យលម្អិតការបង់ប្រាក់ប្រចាំខែនីមួយៗ និងទាញយកជាឯកសារ PDF ខ្នាត A4</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex items-center gap-1.5 bg-white border border-slate-300 rounded-xl px-3 py-1.5">
+                        <span class="text-xs font-medium text-slate-600">ឆ្នាំសិក្សា៖</span>
+                        <select id="studentPdfYearSelect" class="text-xs sm:text-sm font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer"></select>
+                    </div>
+
+                    <button id="downloadStudentPdfBtn" type="button" class="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-semibold px-4 py-2 rounded-xl text-xs sm:text-sm shadow-xs transition-all flex items-center gap-2" title="ទាញយកឯកសារ PDF ខ្នាត A4 ដោយផ្ទាល់">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span>ទាញយក / រក្សាទុក PDF</span>
+                    </button>
+
+                    <button id="printStudentPdfBtn" type="button" class="bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-semibold px-4 py-2 rounded-xl text-xs sm:text-sm shadow-xs transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i>
+                        <span>បោះពុម្ព</span>
+                    </button>
+
+                    <button id="closeStudentPdfModalBtn" type="button" class="w-8 h-8 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-200/70 flex items-center justify-center">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Printable PDF Statement Body -->
+            <div id="studentPdfModalBody" class="p-6 sm:p-8 max-h-[80vh] overflow-y-auto bg-white space-y-4">
+                <div class="pdf-letterhead border-b-2 border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-blue-700 text-white flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base sm:text-lg font-bold text-slate-900">មជ្ឈមណ្ឌលបណ្តុះបណ្តាលភាសា និងកុំព្យូទ័រ</h2>
+                            <p class="text-xs text-slate-500">Language & Computer Training Center • ភាសាចិន • ភាសាអង់គ្លេស • កុំព្យូទ័រ</p>
+                        </div>
+                    </div>
+                    <div class="sm:text-right">
+                        <span class="inline-block bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-lg text-xs font-bold uppercase">
+                            របាយការណ៍បង់ថ្លៃសិក្សាសិស្ស
+                        </span>
+                        <p id="pdfPrintDateLabel" class="text-xs text-slate-500 mt-1">ថ្ងៃចេញរបាយការណ៍៖ -</p>
+                    </div>
+                </div>
+
+                <div class="pdf-profile-grid grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                    <div class="space-y-1 text-xs">
+                        <p class="text-slate-500 text-[11px] font-semibold uppercase tracking-wider">ព័ត៌មានផ្ទាល់ខ្លួនសិស្ស</p>
+                        <p><span class="text-slate-500">ឈ្មោះសិស្ស៖</span> <strong id="pdfStudentName" class="text-slate-900 text-sm">-</strong></p>
+                        <p><span class="text-slate-500">ភេទ៖</span> <span id="pdfStudentGender" class="font-medium text-slate-800">-</span> &nbsp;|&nbsp; <span class="text-slate-500">ទូរស័ព្ទ៖</span> <span id="pdfStudentPhone" class="font-medium text-slate-800">-</span></p>
+                        <p><span class="text-slate-500">ថ្ងៃចូលរៀន៖</span> <strong id="pdfStudentEnrollDate" class="text-slate-800">-</strong> &nbsp;|&nbsp; <span class="text-slate-500">ថ្ងៃត្រូវបង់៖</span> <strong id="pdfStudentDueDay" class="text-blue-700">-</strong></p>
+                        <p><span class="text-slate-500">ឆ្នាំសិក្សារបាយការណ៍៖</span> <strong id="pdfStatementYear" class="text-blue-700">-</strong></p>
+                    </div>
+                    <div class="space-y-1 text-xs border-t md:border-t-0 md:border-l border-slate-200 pt-2.5 md:pt-0 md:pl-4">
+                        <p class="text-slate-500 text-[11px] font-semibold uppercase tracking-wider">មុខវិជ្ជាចុះឈ្មោះ & ថ្លៃសិក្សា/ខែ</p>
+                        <div id="pdfStudentCoursesList" class="space-y-0.5"></div>
+                        <p class="pt-1 border-t border-slate-200/80"><span class="text-slate-600 font-medium">សរុបត្រូវបង់ប្រចាំខែ៖</span> <strong id="pdfMonthlyTotalFee" class="text-blue-700 text-sm">$0.00</strong></p>
+                    </div>
+                </div>
+
+                <div class="pdf-summary-grid grid grid-cols-3 gap-3 text-center">
+                    <div class="border border-slate-200 rounded-xl p-3 bg-white">
+                        <p class="text-[11px] text-slate-500">ទឹកប្រាក់ត្រូវបង់សរុប (<span id="pdfSummaryYear1">2026</span>)</p>
+                        <p id="pdfTotalExpectedYear" class="text-sm sm:text-base font-bold text-slate-900 mt-0.5">$0.00</p>
+                    </div>
+                    <div class="border border-emerald-200 rounded-xl p-3 bg-emerald-50/50">
+                        <p class="text-[11px] text-emerald-700">បានបង់ប្រាក់រួចសរុប</p>
+                        <p id="pdfTotalPaidYear" class="text-sm sm:text-base font-bold text-emerald-700 mt-0.5">$0.00</p>
+                    </div>
+                    <div class="border border-amber-200 rounded-xl p-3 bg-amber-50/50">
+                        <p class="text-[11px] text-amber-700">ទឹកប្រាក់នៅជំពាក់សរុប</p>
+                        <p id="pdfTotalUnpaidYear" class="text-sm sm:text-base font-bold text-amber-700 mt-0.5">$0.00</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-xs sm:text-sm font-bold text-slate-800 mb-1.5">តារាងប្រវត្តិបង់ប្រាក់ប្រចាំខែនីមួយៗ (ខែមករា ដល់ ខែធ្នូ)</h4>
+                    <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <colgroup>
+                                <col style="width: 12%;">
+                                <col style="width: 21%;">
+                                <col style="width: 12%;">
+                                <col style="width: 14%;">
+                                <col style="width: 10%;">
+                                <col style="width: 12%;">
+                                <col style="width: 19%;">
+                            </colgroup>
+                            <thead>
+                                <tr class="bg-slate-100 border-b border-slate-200 text-[11px] font-bold text-slate-700">
+                                    <th class="py-2 px-2">ខែ / ឆ្នាំ</th>
+                                    <th class="py-2 px-2">មុខវិជ្ជាសិក្សា</th>
+                                    <th class="py-2 px-2">ថ្ងៃចូលរៀន</th>
+                                    <th class="py-2 px-2">ថ្ងៃត្រូវបង់លុយ</th>
+                                    <th class="py-2 px-2 text-right">ទឹកប្រាក់</th>
+                                    <th class="py-2 px-2">ថ្ងៃបង់ជាក់ស្តែង</th>
+                                    <th class="py-2 px-2 text-center">ស្ថានភាព</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pdfPaymentHistoryTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="pdf-signature-grid grid grid-cols-2 gap-8 pt-4 text-center text-xs text-slate-600">
+                    <div>
+                        <p class="font-semibold text-slate-800">ហត្ថលេខាសិស្ស ឬអាណាព្យាបាល</p>
+                        <p class="text-[10px] text-slate-400 mt-0.5">(Student / Guardian Signature)</p>
+                        <div class="pdf-signature-space h-12 border-b border-dashed border-slate-300 max-w-[170px] mx-auto"></div>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-slate-800">ហត្ថលេខា និងត្រាបេឡាធិការ / អ្នកគ្រប់គ្រង</p>
+                        <p class="text-[10px] text-slate-400 mt-0.5">(Cashier / Administrator Signature)</p>
+                        <div class="pdf-signature-space h-12 border-b border-dashed border-slate-300 max-w-[170px] mx-auto"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal for Deleting Student -->
+    <div id="deleteModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center space-y-4">
+            <div class="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h4 class="text-base font-bold text-slate-900">បញ្ជាក់ការលុបទិន្នន័យសិស្ស</h4>
+                <p id="deleteModalText" class="text-xs text-slate-500 mt-1.5 leading-relaxed">តើអ្នកពិតជាចង់លុបឈ្មោះសិស្សនេះចេញពីប្រព័ន្ធមែនទេ? ទិន្នន័យដែលលុបហើយមិនអាចទាញយកមកវិញបានទេ។</p>
+            </div>
+            <div class="flex items-center justify-center gap-3 pt-2">
+                <button id="cancelDeleteModalBtn" type="button" class="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50">
+                    បោះបង់
+                </button>
+                <button id="confirmDeleteBtn" type="button" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium shadow-xs">
+                    យល់ព្រមលុប
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global State
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let isOfflineMode = false;
+        let isAdminLoggedIn = false;
+        let appId = typeof __app_id !== 'undefined' ? __app_id : 'student-tuition-kh-app';
+
+        // Default Admin Accounts
+        const VALID_ACCOUNTS = [
+            { username: 'admin', password: '123', role: 'អ្នកគ្រប់គ្រងទូទៅ (Admin)' },
+            { username: 'admin', password: 'admin123', role: 'អ្នកគ្រប់គ្រងទូទៅ (Admin)' },
+            { username: 'staff', password: '123456', role: 'បេឡាធិការ (Staff)' }
+        ];
+
+        let studentsList = [];
+        let paymentsMap = {}; // Key: `${monthYear}_${studentId}_${courseKey}` -> paymentDoc
+        let activeTab = 'dashboard'; // 'dashboard' | 'payments' | 'students' | 'reports'
+        let studentIdToDelete = null;
+        let parsedExcelRows = [];
+        let activePdfStudentId = null;
+
+        // Course Metadata Dictionary
+        const COURSE_META = {
+            English: {
+                key: 'English',
+                nameKh: 'ភាសាអង់គ្លេស',
+                badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                barColor: 'bg-indigo-600',
+                icon: 'fa-language'
+            },
+            Chinese: {
+                key: 'Chinese',
+                nameKh: 'ភាសាចិន',
+                badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
+                barColor: 'bg-rose-600',
+                icon: 'fa-yin-yang'
+            },
+            Computer: {
+                key: 'Computer',
+                nameKh: 'កុំព្យូទ័រ',
+                badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                barColor: 'bg-emerald-600',
+                icon: 'fa-laptop-code'
+            }
+        };
+
+        const KHMER_MONTHS = [
+            "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+            "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+        ];
+
+        // Utility Functions
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatKhmerMonthYear(ym) {
+            if (!ym) return '-';
+            const [year, month] = ym.split('-');
+            const mIdx = parseInt(month, 10) - 1;
+            return `${KHMER_MONTHS[mIdx] || month} ${year}`;
+        }
+
+        function formatDateDisplay(isoDate) {
+            if (!isoDate) return '-';
+            const parts = isoDate.split('-');
+            if (parts.length !== 3) return isoDate;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function getTodayIso() {
+            const dNow = new Date();
+            const y = dNow.getFullYear();
+            const m = String(dNow.getMonth() + 1).padStart(2, '0');
+            const d = String(dNow.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function getStudentEnrollDate(student) {
+            if (student.enrollDate) return student.enrollDate;
+            if (student.createdAt && typeof student.createdAt === 'string') {
+                return student.createdAt.slice(0, 10);
+            }
+            return getTodayIso();
+        }
+
+        function getStudentDueDay(student) {
+            if (student.dueDay && Number(student.dueDay) >= 1 && Number(student.dueDay) <= 31) {
+                return Number(student.dueDay);
+            }
+            const enrollDate = getStudentEnrollDate(student);
+            const parts = enrollDate.split('-');
+            if (parts.length === 3) {
+                const parsedDay = parseInt(parts[2], 10);
+                if (!isNaN(parsedDay) && parsedDay >= 1 && parsedDay <= 31) return parsedDay;
+            }
+            return 15;
+        }
+
+        function formatDueDayDisplay(student) {
+            const day = getStudentDueDay(student);
+            return `រៀងរាល់ថ្ងៃទី ${String(day).padStart(2, '0')}`;
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-rose-600' : (type === 'info' ? 'bg-slate-800' : 'bg-emerald-600');
+            const iconClass = type === 'error' ? 'fa-circle-exclamation' : (type === 'info' ? 'fa-circle-info' : 'fa-circle-check');
+
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-xs sm:text-sm font-medium pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100`;
+            toast.innerHTML = `
+                <i class="fa-solid ${iconClass} text-base"></i>
+                <span class="flex-1">${escapeHtml(message)}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        // Local Storage Fallback Helper
+        function saveLocalFallbackData() {
+            try {
+                localStorage.setItem(`${appId}_students`, JSON.stringify(studentsList));
+                localStorage.setItem(`${appId}_payments`, JSON.stringify(paymentsMap));
+            } catch (e) {
+                console.warn('LocalStorage save failed:', e);
+            }
+        }
+
+        function loadLocalFallbackData() {
+            try {
+                const savedStudents = localStorage.getItem(`${appId}_students`);
+                const savedPayments = localStorage.getItem(`${appId}_payments`);
+                if (savedStudents) studentsList = JSON.parse(savedStudents);
+                if (savedPayments) paymentsMap = JSON.parse(savedPayments);
+            } catch (e) {
+                console.warn('LocalStorage load failed:', e);
+            }
+        }
+
+        // Initialize Default Current Month
+        const monthSelector = document.getElementById('monthSelector');
+        const now = new Date();
+        const defaultMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        monthSelector.value = defaultMonthStr;
+
+        // Login & Logout Logic
+        function toggleLoginPasswordVisibility() {
+            const pwdInput = document.getElementById('loginPassword');
+            const eyeIcon = document.getElementById('loginEyeIcon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                eyeIcon.className = 'fa-regular fa-eye-slash';
+            } else {
+                pwdInput.type = 'password';
+                eyeIcon.className = 'fa-regular fa-eye';
+            }
+        }
+
+        function fillDemoCredentials() {
+            document.getElementById('loginUsername').value = 'admin';
+            document.getElementById('loginPassword').value = 'admin123';
+            document.getElementById('loginErrorBox').classList.add('hidden');
+        }
+
+        function logoutUser() {
+            isAdminLoggedIn = false;
+            try {
+                sessionStorage.removeItem('kh_school_logged_in_user');
+            } catch (err) {
+                console.warn('Session storage unavailable:', err);
+            }
+            const pwdInput = document.getElementById('loginPassword');
+            if (pwdInput) pwdInput.value = '';
+            const errBox = document.getElementById('loginErrorBox');
+            if (errBox) errBox.classList.add('hidden');
+            const overlay = document.getElementById('loginOverlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+            }
+            showToast("អ្នកបានចាកចេញពីប្រព័ន្ធរួចរាល់");
+        }
+
+        function completeLoginSuccess(account) {
+            isAdminLoggedIn = true;
+            const badge = document.getElementById('loggedInUserBadge');
+            if (badge) badge.textContent = account.role || account.username;
+
+            try {
+                if (document.getElementById('rememberSessionChk').checked) {
+                    sessionStorage.setItem('kh_school_logged_in_user', JSON.stringify({
+                        username: account.username,
+                        role: account.role
+                    }));
+                }
+            } catch (err) {
+                console.warn('Session storage unavailable:', err);
+            }
+
+            const overlay = document.getElementById('loginOverlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+
+            if (!currentUser && !isOfflineMode) {
+                const loader = document.getElementById('loadingOverlay');
+                loader.classList.remove('hidden');
+                loader.classList.add('flex');
+                initApp();
+            } else {
+                renderAll();
+            }
+        }
+
+        document.getElementById('togglePwdBtn').addEventListener('click', toggleLoginPasswordVisibility);
+        document.getElementById('fillDemoBtn').addEventListener('click', fillDemoCredentials);
+        document.getElementById('logoutBtn').addEventListener('click', logoutUser);
+
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const usernameInput = document.getElementById('loginUsername').value.trim().toLowerCase();
+            const passwordInput = document.getElementById('loginPassword').value;
+            const errorBox = document.getElementById('loginErrorBox');
+
+            const matched = VALID_ACCOUNTS.find(
+                acc => acc.username.toLowerCase() === usernameInput && acc.password === passwordInput
+            );
+
+            if (!matched) {
+                errorBox.classList.remove('hidden');
+                document.getElementById('loginErrorText').textContent = 'ឈ្មោះអ្នកប្រើប្រាស់ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវទេ! (សាកល្បង៖ admin / admin123)';
+                return;
+            }
+
+            errorBox.classList.add('hidden');
+            completeLoginSuccess(matched);
+            showToast(`ចូលប្រើប្រាស់ជោគជ័យ (${matched.role})`);
+        });
+
+        // Initialize Firebase & Auth with Automatic LocalStorage Fallback
+        async function initApp() {
+            const loader = document.getElementById('loadingOverlay');
+            try {
+                if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+                    throw new Error("Firebase config not provided");
+                }
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        setupRealtimeListeners();
+                    }
+                });
+            } catch (error) {
+                console.warn("Running in Local Storage mode:", error.message);
+                isOfflineMode = true;
+                document.getElementById('cloudStatusDot').className = 'w-2 h-2 rounded-full bg-amber-500';
+                document.getElementById('cloudStatusText').textContent = 'រក្សាទុកក្នុងឧបករណ៍ (Local Storage)';
+                loadLocalFallbackData();
+                if (studentsList.length === 0) {
+                    seedInitialDemoStudents();
+                } else {
+                    renderAll();
+                }
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+            }
+        }
+
+        // Firestore Real-Time Listeners
+        function setupRealtimeListeners() {
+            const studentsCol = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+            const paymentsCol = collection(db, 'artifacts', appId, 'public', 'data', 'payments');
+
+            let studentsLoaded = false;
+            let paymentsLoaded = false;
+
+            const checkInitialLoad = () => {
+                if (studentsLoaded && paymentsLoaded) {
+                    const loader = document.getElementById('loadingOverlay');
+                    loader.classList.add('hidden');
+                    loader.classList.remove('flex');
+                    if (studentsList.length === 0) {
+                        seedInitialDemoStudents();
+                    }
+                }
+            };
+
+            onSnapshot(studentsCol, (snapshot) => {
+                studentsList = [];
+                snapshot.forEach((docSnap) => {
+                    studentsList.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                studentsList.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || '', 'km'));
+                studentsLoaded = true;
+                checkInitialLoad();
+                renderAll();
+            }, (err) => {
+                console.error("Students listener error:", err);
+                studentsLoaded = true;
+                checkInitialLoad();
+            });
+
+            onSnapshot(paymentsCol, (snapshot) => {
+                paymentsMap = {};
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const compositeKey = `${data.monthYear}_${data.studentId}_${data.courseKey}`;
+                    paymentsMap[compositeKey] = { id: docSnap.id, ...data };
+                });
+                paymentsLoaded = true;
+                checkInitialLoad();
+                renderAll();
+            }, (err) => {
+                console.error("Payments listener error:", err);
+                paymentsLoaded = true;
+                checkInitialLoad();
+            });
+        }
+
+        // Seed Initial Sample Students for First Load
+        async function seedInitialDemoStudents() {
+            const currentMonth = monthSelector.value;
+            const y = currentMonth.split('-')[0];
+            const demoStudents = [
+                {
+                    fullName: "សុខ សុវណ្ណារ៉ា",
+                    gender: "ប្រុស",
+                    phone: "012 889 900",
+                    enrollDate: `${y}-01-05`,
+                    dueDay: 5,
+                    courses: [
+                        { key: "English", fee: 15 },
+                        { key: "Computer", fee: 20 }
+                    ],
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    fullName: "ចាន់ ម៉ាលីស",
+                    gender: "ស្រី",
+                    phone: "096 456 789",
+                    enrollDate: `${y}-01-12`,
+                    dueDay: 12,
+                    courses: [
+                        { key: "Chinese", fee: 15 },
+                        { key: "English", fee: 15 },
+                        { key: "Computer", fee: 20 }
+                    ],
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    fullName: "លី វិសាល",
+                    gender: "ប្រុស",
+                    phone: "077 321 654",
+                    enrollDate: `${y}-02-20`,
+                    dueDay: 20,
+                    courses: [
+                        { key: "Chinese", fee: 18 }
+                    ],
+                    createdAt: new Date().toISOString()
+                }
+            ];
+
+            if (isOfflineMode) {
+                demoStudents.forEach((st, index) => {
+                    const id = `demo_st_${Date.now()}_${index}`;
+                    studentsList.push({ id, ...st });
+                    if (index === 0) {
+                        const payKey = `${currentMonth}_${id}_English`;
+                        paymentsMap[payKey] = {
+                            id: payKey,
+                            studentId: id,
+                            courseKey: 'English',
+                            monthYear: currentMonth,
+                            amount: 15,
+                            status: 'Paid',
+                            paymentDate: `${currentMonth}-05`
+                        };
+                    }
+                });
+                saveLocalFallbackData();
+                renderAll();
+                return;
+            }
+
+            try {
+                const studentsCol = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+                for (let i = 0; i < demoStudents.length; i++) {
+                    const addedDoc = await addDoc(studentsCol, demoStudents[i]);
+                    if (i === 0) {
+                        const payDocId = `${currentMonth}_${addedDoc.id}_English`;
+                        const payRef = doc(db, 'artifacts', appId, 'public', 'data', 'payments', payDocId);
+                        await setDoc(payRef, {
+                            studentId: addedDoc.id,
+                            courseKey: 'English',
+                            monthYear: currentMonth,
+                            amount: 15,
+                            status: 'Paid',
+                            paymentDate: `${currentMonth}-05`
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Error seeding demo data:", e);
+            }
+        }
+
+        // Render All UI Components
+        function renderAll() {
+            const selectedMonth = monthSelector.value;
+            const formattedMonth = formatKhmerMonthYear(selectedMonth);
+
+            document.getElementById('statMonthLabel1').textContent = formattedMonth;
+            document.getElementById('statMonthLabel2').textContent = formattedMonth;
+            document.getElementById('dashUnpaidMonthLabel').textContent = formattedMonth;
+            document.getElementById('reportHeaderMonthTitle').textContent = formattedMonth;
+            document.getElementById('reportSubtableMonth').textContent = formattedMonth;
+            document.getElementById('reportDetailMonth').textContent = formattedMonth;
+            document.getElementById('printReportSubtitle').textContent = `ប្រចាំខែ ${formattedMonth} • មជ្ឈមណ្ឌលបណ្តុះបណ្តាលភាសា និងកុំព្យូទ័រ`;
+
+            updateDashboardTab(selectedMonth);
+            renderPaymentsTable(selectedMonth);
+            renderStudentsTable();
+            renderReportsTab(selectedMonth);
+        }
+
+        // Render Tab 0: Dashboard Overview
+        function updateDashboardTab(selectedMonth) {
+            document.getElementById('statTotalStudents').textContent = `${studentsList.length} នាក់`;
+
+            let engCount = 0, chnCount = 0, comCount = 0;
+            let expectedTotal = 0;
+            let paidTotal = 0;
+            let unpaidCourseCount = 0;
+            let totalEnrollments = 0;
+
+            const dashUnpaidBody = document.getElementById('dashUnpaidTableBody');
+            dashUnpaidBody.innerHTML = '';
+            let unpaidRowsShown = 0;
+
+            studentsList.forEach(student => {
+                const courses = student.courses || [];
+                courses.forEach(c => {
+                    totalEnrollments++;
+                    if (c.key === 'English') engCount++;
+                    if (c.key === 'Chinese') chnCount++;
+                    if (c.key === 'Computer') comCount++;
+
+                    const fee = Number(c.fee) || 0;
+                    expectedTotal += fee;
+
+                    const payKey = `${selectedMonth}_${student.id}_${c.key}`;
+                    const payRecord = paymentsMap[payKey];
+                    const isPaid = payRecord && payRecord.status === 'Paid';
+
+                    if (isPaid) {
+                        paidTotal += Number(payRecord.amount || fee);
+                    } else {
+                        unpaidCourseCount++;
+                        if (unpaidRowsShown < 6) {
+                            unpaidRowsShown++;
+                            const meta = COURSE_META[c.key] || { nameKh: c.key, badgeClass: 'bg-slate-100 text-slate-700', icon: 'fa-book' };
+                            const tr = document.createElement('tr');
+                            tr.className = 'hover:bg-slate-50';
+                            tr.innerHTML = `
+                                <td class="py-2.5 px-4 font-semibold text-slate-800">${escapeHtml(student.fullName)}</td>
+                                <td class="py-2.5 px-4">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border ${meta.badgeClass}">
+                                        ${meta.nameKh}
+                                    </span>
+                                </td>
+                                <td class="py-2.5 px-4 text-xs text-blue-700 font-semibold">${formatDueDayDisplay(student)}</td>
+                                <td class="py-2.5 px-4 font-bold text-slate-700">$${fee.toFixed(2)}</td>
+                                <td class="py-2.5 px-4 text-right">
+                                    <button type="button" data-action="toggle-pay" data-student-id="${student.id}" data-course-key="${c.key}" data-fee="${fee}" data-paid="false" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white">
+                                        <i class="fa-solid fa-check mr-1"></i> កត់ត្រាបានបង់
+                                    </button>
+                                </td>
+                            `;
+                            dashUnpaidBody.appendChild(tr);
+                        }
+                    }
+                });
+            });
+
+            if (unpaidRowsShown === 0) {
+                dashUnpaidBody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-xs text-emerald-700 font-medium"><i class="fa-solid fa-circle-check mr-1"></i> សិស្សទាំងអស់បានបង់ថ្លៃសិក្សាប្រចាំខែនេះរួចរាល់ហើយ!</td></tr>`;
+            }
+
+            document.getElementById('statEnglishCount').textContent = `${engCount} នាក់`;
+            document.getElementById('statChineseCount').textContent = `${chnCount} នាក់`;
+            document.getElementById('statComputerCount').textContent = `${comCount} នាក់`;
+
+            document.getElementById('statPaidAmount').textContent = `$${paidTotal.toFixed(2)}`;
+            document.getElementById('statExpectedAmount').textContent = `សរុបត្រូវប្រមូល៖ $${expectedTotal.toFixed(2)}`;
+            document.getElementById('statUnpaidCount').textContent = `${unpaidCourseCount} មុខវិជ្ជា`;
+
+            const paidCount = totalEnrollments - unpaidCourseCount;
+            const rate = totalEnrollments > 0 ? Math.round((paidCount / totalEnrollments) * 100) : 0;
+            document.getElementById('statCollectionRate').textContent = `អត្រាបង់ប្រាក់៖ ${rate}% (${paidCount}/${totalEnrollments})`;
+
+            // Render Subject Progress Bars
+            const progressContainer = document.getElementById('dashSubjectProgressContainer');
+            progressContainer.innerHTML = '';
+            const items = [
+                { key: 'English', count: engCount },
+                { key: 'Chinese', count: chnCount },
+                { key: 'Computer', count: comCount }
+            ];
+            items.forEach(item => {
+                const meta = COURSE_META[item.key];
+                const pct = totalEnrollments > 0 ? Math.round((item.count / totalEnrollments) * 100) : 0;
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <div class="flex items-center justify-between text-xs mb-1">
+                        <span class="font-semibold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid ${meta.icon} text-slate-500"></i> ${meta.nameKh}
+                        </span>
+                        <span class="font-bold text-slate-800">${item.count} នាក់ (${pct}%)</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full ${meta.barColor} rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                    </div>
+                `;
+                progressContainer.appendChild(div);
+            });
+        }
+
+        // Render Tab 1: Monthly Tuition Tracking Table
+        function renderPaymentsTable(selectedMonth) {
+            const tbody = document.getElementById('paymentsTableBody');
+            const emptyState = document.getElementById('paymentsEmptyState');
+            const statusFilter = document.getElementById('paymentStatusFilter').value;
+            const courseFilter = document.getElementById('courseFilter').value;
+            const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+
+            tbody.innerHTML = '';
+            let rowNumber = 0;
+
+            studentsList.forEach(student => {
+                const courses = student.courses || [];
+                courses.forEach(c => {
+                    if (courseFilter !== 'all' && c.key !== courseFilter) return;
+
+                    const nameMatch = (student.fullName || '').toLowerCase().includes(searchQuery);
+                    const phoneMatch = (student.phone || '').toLowerCase().includes(searchQuery);
+                    if (searchQuery && !nameMatch && !phoneMatch) return;
+
+                    const payKey = `${selectedMonth}_${student.id}_${c.key}`;
+                    const payRecord = paymentsMap[payKey];
+                    const isPaid = payRecord && payRecord.status === 'Paid';
+
+                    if (statusFilter === 'Paid' && !isPaid) return;
+                    if (statusFilter === 'Unpaid' && isPaid) return;
+
+                    rowNumber++;
+                    const meta = COURSE_META[c.key] || { nameKh: c.key, badgeClass: 'bg-slate-100 text-slate-700', icon: 'fa-book' };
+                    const fee = Number(c.fee) || 0;
+                    const enrollDateStr = formatDateDisplay(getStudentEnrollDate(student));
+                    const dueDayStr = formatDueDayDisplay(student);
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50/90 transition-colors';
+                    tr.innerHTML = `
+                        <td class="py-3.5 px-4 text-slate-500 font-medium">${rowNumber}</td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-semibold text-slate-900">${escapeHtml(student.fullName)}</div>
+                            <div class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                                <span>${escapeHtml(student.gender || '-')}</span>
+                                ${student.phone ? `<span>• <i class="fa-solid fa-phone text-[10px]"></i> ${escapeHtml(student.phone)}</span>` : ''}
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${meta.badgeClass}">
+                                <i class="fa-solid ${meta.icon}"></i>
+                                ${meta.nameKh}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-slate-600 font-medium whitespace-nowrap">
+                            <i class="fa-regular fa-calendar-check text-slate-400 mr-1"></i>${enrollDateStr}
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                <i class="fa-regular fa-bell text-[11px]"></i> ${dueDayStr}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 font-bold text-slate-800">$${fee.toFixed(2)}</td>
+                        <td class="py-3.5 px-4">
+                            ${isPaid
+                                ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                     <i class="fa-solid fa-circle-check"></i> បានបង់រួច (Paid)
+                                   </span>`
+                                : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                     <i class="fa-regular fa-clock"></i> មិនទាន់បង់ (Unpaid)
+                                   </span>`
+                            }
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-slate-500">
+                            ${isPaid && payRecord.paymentDate ? formatDateDisplay(payRecord.paymentDate) : '<span class="text-slate-300">—</span>'}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="inline-flex items-center justify-end gap-1.5 flex-wrap">
+                                ${isPaid
+                                    ? `<button type="button" data-action="toggle-pay" data-student-id="${student.id}" data-course-key="${c.key}" data-fee="${fee}" data-paid="true" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
+                                         <i class="fa-solid fa-rotate-left mr-1"></i> បោះបង់
+                                       </button>`
+                                    : `<button type="button" data-action="toggle-pay" data-student-id="${student.id}" data-course-key="${c.key}" data-fee="${fee}" data-paid="false" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-all">
+                                         <i class="fa-solid fa-check mr-1"></i> កត់ត្រាបានបង់
+                                       </button>`
+                                }
+                                <button type="button" data-action="open-pdf" data-student-id="${student.id}" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors" title="របាយការណ៍បង់ប្រាក់ PDF របស់សិស្សនេះ">
+                                    <i class="fa-solid fa-file-pdf mr-1"></i> របាយការណ៍ PDF
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+
+            if (rowNumber === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+        }
+
+        // Render Tab 2: All Students Directory Table
+        function renderStudentsTable() {
+            const tbody = document.getElementById('studentsTableBody');
+            const emptyState = document.getElementById('studentsEmptyState');
+            const courseFilter = document.getElementById('courseFilter').value;
+            const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+
+            tbody.innerHTML = '';
+            let count = 0;
+
+            studentsList.forEach(student => {
+                const courses = student.courses || [];
+
+                if (courseFilter !== 'all' && !courses.some(c => c.key === courseFilter)) return;
+
+                const nameMatch = (student.fullName || '').toLowerCase().includes(searchQuery);
+                const phoneMatch = (student.phone || '').toLowerCase().includes(searchQuery);
+                if (searchQuery && !nameMatch && !phoneMatch) return;
+
+                count++;
+                let totalMonthly = 0;
+                const badgesHtml = courses.map(c => {
+                    const fee = Number(c.fee) || 0;
+                    totalMonthly += fee;
+                    const meta = COURSE_META[c.key] || { nameKh: c.key, badgeClass: 'bg-slate-100 text-slate-700', icon: 'fa-book' };
+                    return `
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${meta.badgeClass} mr-1.5 mb-1">
+                            <i class="fa-solid ${meta.icon}"></i>
+                            ${meta.nameKh} ($${fee})
+                        </span>
+                    `;
+                }).join('');
+
+                const enrollDateStr = formatDateDisplay(getStudentEnrollDate(student));
+                const dueDayStr = formatDueDayDisplay(student);
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/90 transition-colors';
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 text-slate-500 font-medium">${count}</td>
+                    <td class="py-3.5 px-4">
+                        <div class="font-semibold text-slate-900">${escapeHtml(student.fullName)}</div>
+                        <div class="text-xs text-slate-400">ភេទ៖ ${escapeHtml(student.gender || '-')}</div>
+                    </td>
+                    <td class="py-3.5 px-4 text-slate-600 text-xs sm:text-sm">
+                        ${student.phone ? `<i class="fa-solid fa-phone text-slate-400 text-xs mr-1"></i> ${escapeHtml(student.phone)}` : '<span class="text-slate-300">មិនមាន</span>'}
+                    </td>
+                    <td class="py-3.5 px-4 text-xs text-slate-600 font-medium whitespace-nowrap">
+                        <i class="fa-regular fa-calendar-check text-slate-400 mr-1"></i>${enrollDateStr}
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                            <i class="fa-regular fa-bell text-[11px]"></i> ${dueDayStr}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-4">${badgesHtml}</td>
+                    <td class="py-3.5 px-4 font-bold text-blue-700">$${totalMonthly.toFixed(2)}/ខែ</td>
+                    <td class="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
+                        <button type="button" data-action="open-pdf" data-student-id="${student.id}" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors" title="របាយការណ៍បង់ប្រាក់ PDF">
+                            <i class="fa-solid fa-file-pdf mr-1"></i> របាយការណ៍ PDF
+                        </button>
+                        <button type="button" data-action="edit-student" data-student-id="${student.id}" class="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors" title="កែប្រែព័ត៌មាន">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button type="button" data-action="delete-student" data-student-id="${student.id}" data-student-name="${escapeHtml(student.fullName)}" class="p-2 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors" title="លុបសិស្ស">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (count === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+        }
+
+        // Render Tab 3: Monthly & Annual Reports
+        function renderReportsTab(selectedMonth) {
+            const subjectTbody = document.getElementById('subjectReportTableBody');
+            const subjectTfoot = document.getElementById('subjectReportTableFoot');
+            const detailTbody = document.getElementById('reportDetailTableBody');
+            const detailFilter = document.getElementById('reportDetailStatusFilter').value;
+
+            const courseKeys = ['English', 'Chinese', 'Computer'];
+            const statsByCourse = {
+                English: { totalStudents: 0, paidCount: 0, unpaidCount: 0, expected: 0, paid: 0, unpaid: 0 },
+                Chinese: { totalStudents: 0, paidCount: 0, unpaidCount: 0, expected: 0, paid: 0, unpaid: 0 },
+                Computer: { totalStudents: 0, paidCount: 0, unpaidCount: 0, expected: 0, paid: 0, unpaid: 0 }
+            };
+
+            detailTbody.innerHTML = '';
+            let detailIdx = 0;
+
+            studentsList.forEach(student => {
+                const courses = student.courses || [];
+                const enrollDateStr = formatDateDisplay(getStudentEnrollDate(student));
+                const dueDayStr = formatDueDayDisplay(student);
+
+                courses.forEach(c => {
+                    const fee = Number(c.fee) || 0;
+                    const payKey = `${selectedMonth}_${student.id}_${c.key}`;
+                    const payRecord = paymentsMap[payKey];
+                    const isPaid = payRecord && payRecord.status === 'Paid';
+                    const paidVal = isPaid ? Number(payRecord.amount || fee) : 0;
+
+                    if (statsByCourse[c.key]) {
+                        statsByCourse[c.key].totalStudents++;
+                        statsByCourse[c.key].expected += fee;
+                        if (isPaid) {
+                            statsByCourse[c.key].paidCount++;
+                            statsByCourse[c.key].paid += paidVal;
+                        } else {
+                            statsByCourse[c.key].unpaidCount++;
+                            statsByCourse[c.key].unpaid += fee;
+                        }
+                    }
+
+                    if (detailFilter === 'Paid' && !isPaid) return;
+                    if (detailFilter === 'Unpaid' && isPaid) return;
+
+                    detailIdx++;
+                    const meta = COURSE_META[c.key] || { nameKh: c.key };
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50';
+                    tr.innerHTML = `
+                        <td class="py-2.5 px-3 text-slate-500">${detailIdx}</td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-900">${escapeHtml(student.fullName)}</td>
+                        <td class="py-2.5 px-3 text-slate-600">${escapeHtml(student.phone || '-')}</td>
+                        <td class="py-2.5 px-3 font-medium text-slate-800">${meta.nameKh}</td>
+                        <td class="py-2.5 px-3 text-xs text-slate-600 whitespace-nowrap">${enrollDateStr}</td>
+                        <td class="py-2.5 px-3 text-xs font-semibold text-blue-700 whitespace-nowrap">${dueDayStr}</td>
+                        <td class="py-2.5 px-3 text-right font-semibold text-slate-800">$${fee.toFixed(2)}</td>
+                        <td class="py-2.5 px-3 text-center">
+                            ${isPaid
+                                ? '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">បានបង់រួច</span>'
+                                : '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">មិនទាន់បង់</span>'
+                            }
+                        </td>
+                        <td class="py-2.5 px-3 text-xs text-slate-500">${isPaid && payRecord.paymentDate ? formatDateDisplay(payRecord.paymentDate) : '—'}</td>
+                        <td class="py-2.5 px-3 text-center no-print">
+                            <button type="button" data-action="open-pdf" data-student-id="${student.id}" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors" title="មើលរបាយការណ៍ PDF របស់សិស្ស">
+                                <i class="fa-solid fa-file-pdf mr-1"></i> PDF
+                            </button>
+                        </td>
+                    `;
+                    detailTbody.appendChild(tr);
+                });
+            });
+
+            if (detailIdx === 0) {
+                detailTbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-xs text-slate-400">មិនមានទិន្នន័យសម្រាប់បង្ហាញក្នុងខែនេះទេ</td></tr>`;
+            }
+
+            subjectTbody.innerHTML = '';
+            let grandStudents = 0, grandPaidCount = 0, grandUnpaidCount = 0;
+            let grandExpected = 0, grandPaid = 0, grandUnpaid = 0;
+
+            courseKeys.forEach(key => {
+                const st = statsByCourse[key];
+                const meta = COURSE_META[key];
+                grandStudents += st.totalStudents;
+                grandPaidCount += st.paidCount;
+                grandUnpaidCount += st.unpaidCount;
+                grandExpected += st.expected;
+                grandPaid += st.paid;
+                grandUnpaid += st.unpaid;
+
+                const pct = st.expected > 0 ? Math.round((st.paid / st.expected) * 100) : 0;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-semibold text-slate-800">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${meta.badgeClass}">
+                            <i class="fa-solid ${meta.icon}"></i> ${meta.nameKh}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-center font-medium">${st.totalStudents}</td>
+                    <td class="py-3 px-4 text-center text-emerald-700 font-semibold">${st.paidCount}</td>
+                    <td class="py-3 px-4 text-center text-amber-700 font-semibold">${st.unpaidCount}</td>
+                    <td class="py-3 px-4 text-right font-semibold text-slate-800">$${st.expected.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-right font-bold text-emerald-600">$${st.paid.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-right font-bold text-amber-600">$${st.unpaid.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="inline-flex items-center gap-2">
+                            <div class="w-14 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                <div class="h-full bg-emerald-500" style="width: ${pct}%"></div>
+                            </div>
+                            <span class="text-xs font-bold text-slate-700">${pct}%</span>
+                        </div>
+                    </td>
+                `;
+                subjectTbody.appendChild(tr);
+            });
+
+            const grandPct = grandExpected > 0 ? Math.round((grandPaid / grandExpected) * 100) : 0;
+            subjectTfoot.innerHTML = `
+                <tr>
+                    <td class="py-3 px-4">សរុបរួមទាំងអស់ (Total)</td>
+                    <td class="py-3 px-4 text-center">${grandStudents}</td>
+                    <td class="py-3 px-4 text-center text-emerald-700">${grandPaidCount}</td>
+                    <td class="py-3 px-4 text-center text-amber-700">${grandUnpaidCount}</td>
+                    <td class="py-3 px-4 text-right">$${grandExpected.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-right text-emerald-700">$${grandPaid.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-right text-amber-700">$${grandUnpaid.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-center text-blue-700">${grandPct}%</td>
+                </tr>
+            `;
+
+            // Annual 12-Month Bar Chart
+            const selectedYear = selectedMonth.split('-')[0];
+            document.getElementById('annualChartYearLabel').textContent = selectedYear;
+            const chartContainer = document.getElementById('annualBarChart');
+            chartContainer.innerHTML = '';
+
+            let maxMonthTotal = 1;
+            const monthlySeries = [];
+
+            for (let m = 1; m <= 12; m++) {
+                const ym = `${selectedYear}-${String(m).padStart(2, '0')}`;
+                let mPaid = 0;
+                let mUnpaid = 0;
+
+                studentsList.forEach(student => {
+                    (student.courses || []).forEach(c => {
+                        const fee = Number(c.fee) || 0;
+                        const payKey = `${ym}_${student.id}_${c.key}`;
+                        const payRecord = paymentsMap[payKey];
+                        if (payRecord && payRecord.status === 'Paid') {
+                            mPaid += Number(payRecord.amount || fee);
+                        } else {
+                            mUnpaid += fee;
+                        }
+                    });
+                });
+
+                if (mPaid + mUnpaid > maxMonthTotal) {
+                    maxMonthTotal = mPaid + mUnpaid;
+                }
+                monthlySeries.push({ monthNum: m, ym, mPaid, mUnpaid });
+            }
+
+            monthlySeries.forEach(item => {
+                const paidHeightPct = Math.round((item.mPaid / maxMonthTotal) * 100);
+                const unpaidHeightPct = Math.round((item.mUnpaid / maxMonthTotal) * 100);
+                const isSelected = item.ym === selectedMonth;
+
+                const col = document.createElement('div');
+                col.className = `flex flex-col items-center justify-end h-full group cursor-pointer ${isSelected ? 'bg-blue-50/80 rounded-lg p-1' : ''}`;
+                col.title = `ខែ${KHMER_MONTHS[item.monthNum - 1]} ${selectedYear}: បានបង់ $${item.mPaid.toFixed(2)} | ជំពាក់ $${item.mUnpaid.toFixed(2)}`;
+                col.addEventListener('click', () => {
+                    monthSelector.value = item.ym;
+                    renderAll();
+                });
+
+                col.innerHTML = `
+                    <div class="w-full max-w-[26px] flex flex-col justify-end h-36 bg-slate-100 rounded-t-md overflow-hidden">
+                        <div class="w-full bg-amber-400 transition-all duration-300" style="height: ${unpaidHeightPct}%"></div>
+                        <div class="w-full bg-emerald-500 transition-all duration-300" style="height: ${paidHeightPct}%"></div>
+                    </div>
+                    <span class="text-[11px] mt-1.5 font-semibold ${isSelected ? 'text-blue-700' : 'text-slate-600'}">${KHMER_MONTHS[item.monthNum - 1]}</span>
+                `;
+                chartContainer.appendChild(col);
+            });
+        }
+
+        // Toggle Payment Status (Paid <-> Unpaid)
+        async function togglePaymentStatus(studentId, courseKey, feeAmount, currentlyPaid) {
+            const selectedMonth = monthSelector.value;
+            const payDocId = `${selectedMonth}_${studentId}_${courseKey}`;
+            const newStatus = currentlyPaid ? 'Unpaid' : 'Paid';
+            const paymentDate = currentlyPaid ? null : getTodayIso();
+
+            if (isOfflineMode) {
+                paymentsMap[payDocId] = {
+                    id: payDocId,
+                    studentId,
+                    courseKey,
+                    monthYear: selectedMonth,
+                    amount: Number(feeAmount),
+                    status: newStatus,
+                    paymentDate
+                };
+                saveLocalFallbackData();
+                renderAll();
+                showToast(currentlyPaid ? "បានប្តូរស្ថានភាពទៅជា មិនទាន់បង់ប្រាក់" : "បានកត់ត្រាការបង់ថ្លៃសិក្សាជោគជ័យ!");
+                return;
+            }
+
+            try {
+                const payRef = doc(db, 'artifacts', appId, 'public', 'data', 'payments', payDocId);
+                await setDoc(payRef, {
+                    studentId,
+                    courseKey,
+                    monthYear: selectedMonth,
+                    amount: Number(feeAmount),
+                    status: newStatus,
+                    paymentDate
+                });
+                showToast(currentlyPaid ? "បានប្តូរស្ថានភាពទៅជា មិនទាន់បង់ប្រាក់" : "បានកត់ត្រាការបង់ថ្លៃសិក្សាជោគជ័យ!");
+            } catch (error) {
+                console.error("Error updating payment:", error);
+                showToast("មានបញ្ហាក្នុងការកត់ត្រាការបង់ប្រាក់!", "error");
+            }
+        }
+
+        // Tab Switching
+        function switchTab(tabName) {
+            activeTab = tabName;
+            const tabDashboardBtn = document.getElementById('tabDashboardBtn');
+            const tabPaymentsBtn = document.getElementById('tabPaymentsBtn');
+            const tabStudentsBtn = document.getElementById('tabStudentsBtn');
+            const tabReportsBtn = document.getElementById('tabReportsBtn');
+
+            const dashboardContent = document.getElementById('dashboardTabContent');
+            const paymentsContent = document.getElementById('paymentsTabContent');
+            const studentsContent = document.getElementById('studentsTabContent');
+            const reportsContent = document.getElementById('reportsTabContent');
+
+            const statusFilter = document.getElementById('paymentStatusFilter');
+            const monthFilterWrapper = document.getElementById('monthFilterWrapper');
+            const courseFilter = document.getElementById('courseFilter');
+            const searchBoxWrapper = document.getElementById('searchBoxWrapper');
+
+            const activeClass = "px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl border-b-2 border-blue-600 text-blue-700 bg-white transition-all whitespace-nowrap flex items-center gap-2";
+            const inactiveClass = "px-3.5 py-2.5 text-xs sm:text-sm font-medium rounded-t-xl border-b-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-all whitespace-nowrap flex items-center gap-2";
+
+            tabDashboardBtn.className = inactiveClass;
+            tabPaymentsBtn.className = inactiveClass;
+            tabStudentsBtn.className = inactiveClass;
+            tabReportsBtn.className = inactiveClass;
+
+            dashboardContent.classList.add('hidden');
+            paymentsContent.classList.add('hidden');
+            studentsContent.classList.add('hidden');
+            reportsContent.classList.add('hidden');
+
+            if (tabName === 'dashboard') {
+                tabDashboardBtn.className = activeClass;
+                dashboardContent.classList.remove('hidden');
+                statusFilter.classList.add('hidden');
+                monthFilterWrapper.classList.remove('hidden');
+                courseFilter.classList.add('hidden');
+                searchBoxWrapper.classList.add('hidden');
+            } else if (tabName === 'payments') {
+                tabPaymentsBtn.className = activeClass;
+                paymentsContent.classList.remove('hidden');
+                statusFilter.classList.remove('hidden');
+                monthFilterWrapper.classList.remove('hidden');
+                courseFilter.classList.remove('hidden');
+                searchBoxWrapper.classList.remove('hidden');
+            } else if (tabName === 'students') {
+                tabStudentsBtn.className = activeClass;
+                studentsContent.classList.remove('hidden');
+                statusFilter.classList.add('hidden');
+                monthFilterWrapper.classList.add('hidden');
+                courseFilter.classList.remove('hidden');
+                searchBoxWrapper.classList.remove('hidden');
+            } else if (tabName === 'reports') {
+                tabReportsBtn.className = activeClass;
+                reportsContent.classList.remove('hidden');
+                statusFilter.classList.add('hidden');
+                monthFilterWrapper.classList.remove('hidden');
+                courseFilter.classList.add('hidden');
+                searchBoxWrapper.classList.add('hidden');
+                renderReportsTab(monthSelector.value);
+            }
+        }
+
+        // Student Add/Edit Modal Logic
+        function updateModalPreview() {
+            let count = 0;
+            let total = 0;
+            if (document.getElementById('chkEnglish').checked) {
+                count++;
+                total += Number(document.getElementById('feeEnglish').value) || 0;
+            }
+            if (document.getElementById('chkChinese').checked) {
+                count++;
+                total += Number(document.getElementById('feeChinese').value) || 0;
+            }
+            if (document.getElementById('chkComputer').checked) {
+                count++;
+                total += Number(document.getElementById('feeComputer').value) || 0;
+            }
+            document.getElementById('selectedSubjectCountBadge').textContent = `បានរើស៖ ${count} មុខវិជ្ជា`;
+            document.getElementById('modalTotalFeePreview').textContent = `$${total.toFixed(2)} / ខែ`;
+        }
+
+        function openAddStudentModal() {
+            document.getElementById('modalTitle').textContent = "ចុះឈ្មោះសិស្សថ្មី";
+            document.getElementById('editStudentId').value = "";
+            document.getElementById('studentFullName').value = "";
+            document.getElementById('studentGender').value = "ប្រុស";
+            document.getElementById('studentPhone').value = "";
+
+            const todayIso = getTodayIso();
+            document.getElementById('studentEnrollDate').value = todayIso;
+            document.getElementById('studentDueDay').value = new Date().getDate();
+
+            document.getElementById('chkEnglish').checked = true;
+            document.getElementById('feeEnglish').value = 15;
+            document.getElementById('chkChinese').checked = false;
+            document.getElementById('feeChinese').value = 15;
+            document.getElementById('chkComputer').checked = false;
+            document.getElementById('feeComputer').value = 20;
+
+            updateModalPreview();
+            const modal = document.getElementById('studentModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function openEditStudentModal(studentId) {
+            const student = studentsList.find(s => s.id === studentId);
+            if (!student) return;
+
+            document.getElementById('modalTitle').textContent = "កែប្រែព័ត៌មានសិស្ស និងមុខវិជ្ជា";
+            document.getElementById('editStudentId').value = student.id;
+            document.getElementById('studentFullName').value = student.fullName || "";
+            document.getElementById('studentGender').value = student.gender || "ប្រុស";
+            document.getElementById('studentPhone').value = student.phone || "";
+            document.getElementById('studentEnrollDate').value = getStudentEnrollDate(student);
+            document.getElementById('studentDueDay').value = getStudentDueDay(student);
+
+            document.getElementById('chkEnglish').checked = false;
+            document.getElementById('chkChinese').checked = false;
+            document.getElementById('chkComputer').checked = false;
+
+            (student.courses || []).forEach(c => {
+                if (c.key === 'English') {
+                    document.getElementById('chkEnglish').checked = true;
+                    document.getElementById('feeEnglish').value = c.fee;
+                } else if (c.key === 'Chinese') {
+                    document.getElementById('chkChinese').checked = true;
+                    document.getElementById('feeChinese').value = c.fee;
+                } else if (c.key === 'Computer') {
+                    document.getElementById('chkComputer').checked = true;
+                    document.getElementById('feeComputer').value = c.fee;
+                }
+            });
+
+            updateModalPreview();
+            const modal = document.getElementById('studentModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeStudentModal() {
+            const modal = document.getElementById('studentModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('studentEnrollDate').addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val && val.includes('-')) {
+                const dayPart = parseInt(val.split('-')[2], 10);
+                if (!isNaN(dayPart) && dayPart >= 1 && dayPart <= 31) {
+                    document.getElementById('studentDueDay').value = dayPart;
+                }
+            }
+        });
+
+        document.querySelectorAll('.subject-checkbox').forEach(chk => chk.addEventListener('change', updateModalPreview));
+        ['feeEnglish', 'feeChinese', 'feeComputer'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateModalPreview);
+        });
+
+        document.getElementById('studentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('editStudentId').value;
+            const fullName = document.getElementById('studentFullName').value.trim();
+            const gender = document.getElementById('studentGender').value;
+            const phone = document.getElementById('studentPhone').value.trim();
+            const enrollDate = document.getElementById('studentEnrollDate').value || getTodayIso();
+            let dueDay = parseInt(document.getElementById('studentDueDay').value, 10);
+            if (isNaN(dueDay) || dueDay < 1) dueDay = 1;
+            if (dueDay > 31) dueDay = 31;
+
+            const selectedCourses = [];
+            if (document.getElementById('chkEnglish').checked) {
+                selectedCourses.push({ key: 'English', fee: Number(document.getElementById('feeEnglish').value) || 0 });
+            }
+            if (document.getElementById('chkChinese').checked) {
+                selectedCourses.push({ key: 'Chinese', fee: Number(document.getElementById('feeChinese').value) || 0 });
+            }
+            if (document.getElementById('chkComputer').checked) {
+                selectedCourses.push({ key: 'Computer', fee: Number(document.getElementById('feeComputer').value) || 0 });
+            }
+
+            if (selectedCourses.length === 0) {
+                showToast("សូមជ្រើសរើសមុខវិជ្ជាយ៉ាងតិច ១ មុខវិជ្ជា!", "error");
+                return;
+            }
+
+            const saveBtn = document.getElementById('saveStudentBtn');
+            saveBtn.disabled = true;
+
+            if (isOfflineMode) {
+                if (editId) {
+                    const idx = studentsList.findIndex(s => s.id === editId);
+                    if (idx !== -1) {
+                        studentsList[idx] = { ...studentsList[idx], fullName, gender, phone, enrollDate, dueDay, courses: selectedCourses };
+                    }
+                    showToast("បានកែប្រែព័ត៌មានសិស្សជោគជ័យ!");
+                } else {
+                    const newId = `st_${Date.now()}`;
+                    studentsList.push({
+                        id: newId,
+                        fullName,
+                        gender,
+                        phone,
+                        enrollDate,
+                        dueDay,
+                        courses: selectedCourses,
+                        createdAt: new Date().toISOString()
+                    });
+                    showToast("ចុះឈ្មោះសិស្សថ្មីជោគជ័យ!");
+                }
+                studentsList.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || '', 'km'));
+                saveLocalFallbackData();
+                renderAll();
+                closeStudentModal();
+                saveBtn.disabled = false;
+                return;
+            }
+
+            try {
+                if (editId) {
+                    const studentRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', editId);
+                    await updateDoc(studentRef, {
+                        fullName,
+                        gender,
+                        phone,
+                        enrollDate,
+                        dueDay,
+                        courses: selectedCourses
+                    });
+                    showToast("បានកែប្រែព័ត៌មានសិស្សជោគជ័យ!");
+                } else {
+                    const studentsCol = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+                    await addDoc(studentsCol, {
+                        fullName,
+                        gender,
+                        phone,
+                        enrollDate,
+                        dueDay,
+                        courses: selectedCourses,
+                        createdAt: new Date().toISOString()
+                    });
+                    showToast("ចុះឈ្មោះសិស្សថ្មីជោគជ័យ!");
+                }
+                closeStudentModal();
+            } catch (error) {
+                console.error("Error saving student:", error);
+                showToast("មានបញ្ហាក្នុងការរក្សាទុកទិន្នន័យ!", "error");
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+
+        // Delete Student Modal Logic
+        function confirmDeleteStudent(studentId, studentName) {
+            studentIdToDelete = studentId;
+            document.getElementById('deleteModalText').textContent = `តើអ្នកពិតជាចង់លុបឈ្មោះសិស្ស "${studentName}" ចេញពីប្រព័ន្ធមែនទេ? ទិន្នន័យដែលលុបហើយមិនអាចទាញយកមកវិញបានទេ។`;
+            const modal = document.getElementById('deleteModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeDeleteModal() {
+            studentIdToDelete = null;
+            const modal = document.getElementById('deleteModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            if (!studentIdToDelete) return;
+            if (isOfflineMode) {
+                studentsList = studentsList.filter(s => s.id !== studentIdToDelete);
+                saveLocalFallbackData();
+                renderAll();
+                showToast("បានលុបទិន្នន័យសិស្សរួចរាល់");
+                closeDeleteModal();
+                return;
+            }
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'students', studentIdToDelete));
+                showToast("បានលុបទិន្នន័យសិស្សរួចរាល់");
+                closeDeleteModal();
+            } catch (error) {
+                console.error("Error deleting student:", error);
+                showToast("មានបញ្ហាក្នុងការលុបទិន្នន័យ!", "error");
+            }
+        });
+
+        // Excel Export Functions (SheetJS)
+        function exportStudentsToExcel() {
+            if (typeof XLSX === 'undefined') {
+                showToast("បណ្ណាល័យ Excel កំពុងដំណើរការ សូមរង់ចាំបន្តិច!", "error");
+                return;
+            }
+            if (studentsList.length === 0) {
+                showToast("មិនមានទិន្នន័យសិស្សសម្រាប់នាំចេញទេ!", "error");
+                return;
+            }
+
+            const rows = studentsList.map((st, index) => {
+                const eng = (st.courses || []).find(c => c.key === 'English');
+                const chn = (st.courses || []).find(c => c.key === 'Chinese');
+                const com = (st.courses || []).find(c => c.key === 'Computer');
+                const totalFee = (Number(eng?.fee) || 0) + (Number(chn?.fee) || 0) + (Number(com?.fee) || 0);
+
+                return {
+                    'ល.រ': index + 1,
+                    'ឈ្មោះសិស្ស': st.fullName || '',
+                    'ភេទ': st.gender || '',
+                    'លេខទូរស័ព្ទ': st.phone || '',
+                    'ថ្ងៃចូលរៀន': getStudentEnrollDate(st),
+                    'ថ្ងៃត្រូវបង់លុយប្រចាំខែ': getStudentDueDay(st),
+                    'ភាសាអង់គ្លេស ($)': eng ? Number(eng.fee) : 0,
+                    'ភាសាចិន ($)': chn ? Number(chn.fee) : 0,
+                    'កុំព្យូទ័រ ($)': com ? Number(com.fee) : 0,
+                    'សរុបថ្លៃសិក្សា/ខែ ($)': totalFee
+                };
+            });
+
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "បញ្ជីសិស្សទាំងអស់");
+            XLSX.writeFile(wb, `បញ្ជីឈ្មោះសិស្ស_${getTodayIso()}.xlsx`);
+            showToast("បានទាញយកឯកសារ Excel បញ្ជីសិស្សជោគជ័យ!");
+        }
+
+        function exportMonthlyReportToExcel() {
+            if (typeof XLSX === 'undefined') return;
+            const selectedMonth = monthSelector.value;
+            const formattedMonth = formatKhmerMonthYear(selectedMonth);
+
+            const summaryStats = {
+                English: { name: 'ភាសាអង់គ្លេស', count: 0, paidCount: 0, unpaidCount: 0, expected: 0, paid: 0, unpaid: 0 },
+                Chinese: { name: 'ភាសាចិន', count: 0, paidCount: 0, unpaidCount: 0, expected: 0, paid: 0, unpaid: 0 },
+                Computer: { name: 'កុំព្យូទ័រ', count: 0, paidCount: 0, unpaidCount: 0, expected: 0, paid: 0, unpaid: 0 }
+            };
+
+            const detailRows = [];
+            let idx = 0;
+
+            studentsList.forEach(student => {
+                const enrollDateStr = getStudentEnrollDate(student);
+                const dueDayNum = getStudentDueDay(student);
+
+                (student.courses || []).forEach(c => {
+                    idx++;
+                    const fee = Number(c.fee) || 0;
+                    const payKey = `${selectedMonth}_${student.id}_${c.key}`;
+                    const payRecord = paymentsMap[payKey];
+                    const isPaid = payRecord && payRecord.status === 'Paid';
+                    const paidVal = isPaid ? Number(payRecord.amount || fee) : 0;
+
+                    if (summaryStats[c.key]) {
+                        summaryStats[c.key].count++;
+                        summaryStats[c.key].expected += fee;
+                        if (isPaid) {
+                            summaryStats[c.key].paidCount++;
+                            summaryStats[c.key].paid += paidVal;
+                        } else {
+                            summaryStats[c.key].unpaidCount++;
+                            summaryStats[c.key].unpaid += fee;
+                        }
+                    }
+
+                    detailRows.push({
+                        'ល.រ': idx,
+                        'ខែ/ឆ្នាំ': formattedMonth,
+                        'ឈ្មោះសិស្ស': student.fullName || '',
+                        'ភេទ': student.gender || '',
+                        'លេខទូរស័ព្ទ': student.phone || '',
+                        'ថ្ងៃចូលរៀន': enrollDateStr,
+                        'ថ្ងៃត្រូវបង់លុយ': `រៀងរាល់ថ្ងៃទី ${dueDayNum}`,
+                        'មុខវិជ្ជា': COURSE_META[c.key]?.nameKh || c.key,
+                        'ថ្លៃសិក្សា ($)': fee,
+                        'ស្ថានភាព': isPaid ? 'បានបង់រួច (Paid)' : 'មិនទាន់បង់ (Unpaid)',
+                        'កាលបរិច្ឆេទបង់': isPaid && payRecord.paymentDate ? payRecord.paymentDate : '-'
+                    });
+                });
+            });
+
+            const summaryRows = Object.values(summaryStats).map(st => ({
+                'មុខវិជ្ជាសិក្សា': st.name,
+                'សិស្សសរុប (នាក់)': st.count,
+                'បានបង់រួច (នាក់)': st.paidCount,
+                'មិនទាន់បង់ (នាក់)': st.unpaidCount,
+                'ទឹកប្រាក់ត្រូវប្រមូល ($)': st.expected,
+                'ទឹកប្រាក់បានបង់រួច ($)': st.paid,
+                'ទឹកប្រាក់នៅជំពាក់ ($)': st.unpaid
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+            const wsDetails = XLSX.utils.json_to_sheet(detailRows);
+
+            XLSX.utils.book_append_sheet(wb, wsSummary, "របាយការណ៍សង្ខេប");
+            XLSX.utils.book_append_sheet(wb, wsDetails, "បញ្ជីបង់ប្រាក់លម្អិត");
+
+            XLSX.writeFile(wb, `របាយការណ៍បង់ប្រាក់_${selectedMonth}.xlsx`);
+            showToast(`បានទាញយករបាយការណ៍ខែ ${formattedMonth} ជា Excel!`);
+        }
+
+        function exportAnnualReportToExcel() {
+            if (typeof XLSX === 'undefined') return;
+            const selectedYear = monthSelector.value.split('-')[0];
+            const annualRows = [];
+
+            for (let m = 1; m <= 12; m++) {
+                const ym = `${selectedYear}-${String(m).padStart(2, '0')}`;
+                let expected = 0, paid = 0, unpaid = 0, paidCount = 0, unpaidCount = 0;
+
+                studentsList.forEach(student => {
+                    (student.courses || []).forEach(c => {
+                        const fee = Number(c.fee) || 0;
+                        expected += fee;
+                        const payKey = `${ym}_${student.id}_${c.key}`;
+                        const payRecord = paymentsMap[payKey];
+                        if (payRecord && payRecord.status === 'Paid') {
+                            paid += Number(payRecord.amount || fee);
+                            paidCount++;
+                        } else {
+                            unpaid += fee;
+                            unpaidCount++;
+                        }
+                    });
+                });
+
+                annualRows.push({
+                    'ខែ / ឆ្នាំ': `${KHMER_MONTHS[m - 1]} ${selectedYear}`,
+                    'ចំនួនមុខវិជ្ជាបានបង់': paidCount,
+                    'ចំនួនមុខវិជ្ជាមិនទាន់បង់': unpaidCount,
+                    'ទឹកប្រាក់ត្រូវប្រមូលសរុប ($)': expected,
+                    'ទឹកប្រាក់បានបង់រួច ($)': paid,
+                    'ទឹកប្រាក់នៅជំពាក់ ($)': unpaid
+                });
+            }
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(annualRows);
+            XLSX.utils.book_append_sheet(wb, ws, `របាយការណ៍ឆ្នាំ_${selectedYear}`);
+            XLSX.writeFile(wb, `របាយការណ៍ចំណូលប្រចាំឆ្នាំ_${selectedYear}.xlsx`);
+            showToast(`បានទាញយករបាយការណ៍ប្រចាំឆ្នាំ ${selectedYear} ជា Excel!`);
+        }
+
+        // Excel Import Functions
+        function openExcelImportModal() {
+            parsedExcelRows = [];
+            document.getElementById('excelFileInput').value = '';
+            document.getElementById('selectedExcelFileName').textContent = 'មិនទាន់បានជ្រើសរើសឯកសារនៅឡើយទេ';
+            document.getElementById('excelPreviewContainer').classList.add('hidden');
+            document.getElementById('confirmExcelImportBtn').disabled = true;
+
+            const modal = document.getElementById('excelImportModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeExcelImportModal() {
+            const modal = document.getElementById('excelImportModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function downloadExcelImportTemplate() {
+            if (typeof XLSX === 'undefined') return;
+            const todayIso = getTodayIso();
+            const templateData = [
+                {
+                    'ឈ្មោះសិស្ស': 'សុខ ដារ៉ា',
+                    'ភេទ': 'ប្រុស',
+                    'លេខទូរស័ព្ទ': '012 333 444',
+                    'ថ្ងៃចូលរៀន': todayIso,
+                    'ថ្ងៃត្រូវបង់លុយប្រចាំខែ': 10,
+                    'ភាសាអង់គ្លេស ($)': 15,
+                    'ភាសាចិន ($)': 0,
+                    'កុំព្យូទ័រ ($)': 20
+                },
+                {
+                    'ឈ្មោះសិស្ស': 'កែវ សុផា',
+                    'ភេទ': 'ស្រី',
+                    'លេខទូរស័ព្ទ': '098 777 888',
+                    'ថ្ងៃចូលរៀន': todayIso,
+                    'ថ្ងៃត្រូវបង់លុយប្រចាំខែ': 15,
+                    'ភាសាអង់គ្លេស ($)': 15,
+                    'ភាសាចិន ($)': 15,
+                    'កុំព្យូទ័រ ($)': 20
+                }
+            ];
+            const ws = XLSX.utils.json_to_sheet(templateData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "គំរូបញ្ចូលទិន្នន័យសិស្ស");
+            XLSX.writeFile(wb, "គំរូឯកសារបញ្ចូលសិស្ស_Template.xlsx");
+            showToast("បានទាញយកគំរូឯកសារ Excel រួចរាល់!");
+        }
+
+        document.getElementById('excelFileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('selectedExcelFileName').textContent = `ឯកសារដែលបានរើស៖ ${file.name}`;
+            const reader = new FileReader();
+
+            reader.onload = (evt) => {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+
+                    parsedExcelRows = [];
+                    const previewBody = document.getElementById('excelPreviewTableBody');
+                    previewBody.innerHTML = '';
+
+                    jsonRows.forEach(row => {
+                        const fullName = String(row['ឈ្មោះសិស្ស'] || row['Full Name'] || row['Name'] || '').trim();
+                        if (!fullName) return;
+
+                        const gender = String(row['ភេទ'] || row['Gender'] || 'ប្រុស').trim();
+                        const phone = String(row['លេខទូរស័ព្ទ'] || row['Phone'] || '').trim();
+                        const enrollDate = String(row['ថ្ងៃចូលរៀន'] || row['Enroll Date'] || getTodayIso()).trim();
+                        let dueDay = parseInt(row['ថ្ងៃត្រូវបង់លុយប្រចាំខែ'] || row['ថ្ងៃត្រូវបង់លុយ'] || row['Due Day'] || 15, 10);
+                        if (isNaN(dueDay) || dueDay < 1 || dueDay > 31) dueDay = 15;
+
+                        const engFee = Number(row['ភាសាអង់គ្លេស ($)'] || row['English'] || 0);
+                        const chnFee = Number(row['ភាសាចិន ($)'] || row['Chinese'] || 0);
+                        const comFee = Number(row['កុំព្យូទ័រ ($)'] || row['Computer'] || 0);
+
+                        const courses = [];
+                        if (engFee > 0) courses.push({ key: 'English', fee: engFee });
+                        if (chnFee > 0) courses.push({ key: 'Chinese', fee: chnFee });
+                        if (comFee > 0) courses.push({ key: 'Computer', fee: comFee });
+
+                        if (courses.length === 0) {
+                            courses.push({ key: 'English', fee: 15 });
+                        }
+
+                        parsedExcelRows.push({
+                            fullName,
+                            gender,
+                            phone,
+                            enrollDate,
+                            dueDay,
+                            courses,
+                            createdAt: new Date().toISOString()
+                        });
+
+                        const courseSummary = courses.map(c => `${COURSE_META[c.key]?.nameKh} ($${c.fee})`).join(', ');
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="py-2 px-3 font-semibold text-slate-800">${escapeHtml(fullName)}</td>
+                            <td class="py-2 px-3 text-slate-600">${escapeHtml(gender)}</td>
+                            <td class="py-2 px-3 text-slate-600">${escapeHtml(phone || '-')}</td>
+                            <td class="py-2 px-3 text-blue-700 font-medium">${escapeHtml(courseSummary)} • ថ្ងៃទី ${dueDay}</td>
+                        `;
+                        previewBody.appendChild(tr);
+                    });
+
+                    if (parsedExcelRows.length > 0) {
+                        document.getElementById('excelPreviewCountText').textContent = `រកឃើញទិន្នន័យសិស្សត្រឹមត្រូវចំនួន ${parsedExcelRows.length} នាក់`;
+                        document.getElementById('excelPreviewContainer').classList.remove('hidden');
+                        document.getElementById('confirmExcelImportBtn').disabled = false;
+                    } else {
+                        showToast("មិនមានទិន្នន័យសិស្សត្រឹមត្រូវក្នុងឯកសារនេះទេ!", "error");
+                        document.getElementById('excelPreviewContainer').classList.add('hidden');
+                        document.getElementById('confirmExcelImportBtn').disabled = true;
+                    }
+                } catch (err) {
+                    console.error("Excel parse error:", err);
+                    showToast("មិនអាចអានឯកសារ Excel នេះបានទេ!", "error");
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('confirmExcelImportBtn').addEventListener('click', async () => {
+            if (parsedExcelRows.length === 0) return;
+
+            const btn = document.getElementById('confirmExcelImportBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>កំពុងនាំចូល...</span>`;
+
+            if (isOfflineMode) {
+                parsedExcelRows.forEach((st, idx) => {
+                    studentsList.push({ id: `imp_${Date.now()}_${idx}`, ...st });
+                });
+                studentsList.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || '', 'km'));
+                saveLocalFallbackData();
+                renderAll();
+                showToast(`បាននាំចូលទិន្នន័យសិស្សចំនួន ${parsedExcelRows.length} នាក់ជោគជ័យ!`);
+                closeExcelImportModal();
+                btn.innerHTML = `<i class="fa-solid fa-database"></i> <span>បញ្ចូលទៅក្នុងប្រព័ន្ធ</span>`;
+                return;
+            }
+
+            try {
+                const studentsCol = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+                for (const studentObj of parsedExcelRows) {
+                    await addDoc(studentsCol, studentObj);
+                }
+                showToast(`បាននាំចូលទិន្នន័យសិស្សចំនួន ${parsedExcelRows.length} នាក់ជោគជ័យ!`);
+                closeExcelImportModal();
+            } catch (err) {
+                console.error("Excel import save error:", err);
+                showToast("មានបញ្ហាក្នុងការរក្សាទុកទិន្នន័យពី Excel!", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-database"></i> <span>បញ្ចូលទៅក្នុងប្រព័ន្ធ</span>`;
+            }
+        });
+
+        // Individual Student PDF Report Modal Logic
+        function openStudentPdfModal(studentId) {
+            const student = studentsList.find(s => s.id === studentId);
+            if (!student) return;
+
+            activePdfStudentId = studentId;
+
+            const yearSelect = document.getElementById('studentPdfYearSelect');
+            const currentSelectedYear = monthSelector.value.split('-')[0];
+            const baseYear = parseInt(currentSelectedYear, 10) || new Date().getFullYear();
+
+            yearSelect.innerHTML = '';
+            for (let y = baseYear - 2; y <= baseYear + 1; y++) {
+                const opt = document.createElement('option');
+                opt.value = String(y);
+                opt.textContent = `ឆ្នាំ ${y}`;
+                if (String(y) === currentSelectedYear) opt.selected = true;
+                yearSelect.appendChild(opt);
+            }
+
+            renderStudentPdfContent(studentId, yearSelect.value);
+
+            const modal = document.getElementById('studentPdfModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeStudentPdfModal() {
+            activePdfStudentId = null;
+            const modal = document.getElementById('studentPdfModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function renderStudentPdfContent(studentId, yearStr) {
+            const student = studentsList.find(s => s.id === studentId);
+            if (!student) return;
+
+            const enrollDateRaw = getStudentEnrollDate(student);
+            const enrollDateFormatted = formatDateDisplay(enrollDateRaw);
+            const dueDayFormatted = formatDueDayDisplay(student);
+
+            document.getElementById('pdfPrintDateLabel').textContent = `ថ្ងៃចេញរបាយការណ៍៖ ${formatDateDisplay(getTodayIso())}`;
+            document.getElementById('pdfStudentName').textContent = student.fullName || '-';
+            document.getElementById('pdfStudentGender').textContent = student.gender || '-';
+            document.getElementById('pdfStudentPhone').textContent = student.phone || 'មិនមាន';
+            document.getElementById('pdfStudentEnrollDate').textContent = enrollDateFormatted;
+            document.getElementById('pdfStudentDueDay').textContent = dueDayFormatted;
+            document.getElementById('pdfStatementYear').textContent = `ឆ្នាំ ${yearStr}`;
+            document.getElementById('pdfSummaryYear1').textContent = yearStr;
+
+            const courses = student.courses || [];
+            let monthlyFeeSum = 0;
+            const coursesListEl = document.getElementById('pdfStudentCoursesList');
+            coursesListEl.innerHTML = '';
+
+            courses.forEach(c => {
+                const fee = Number(c.fee) || 0;
+                monthlyFeeSum += fee;
+                const meta = COURSE_META[c.key] || { nameKh: c.key };
+                const p = document.createElement('p');
+                p.className = 'flex items-center justify-between text-xs text-slate-700';
+                p.innerHTML = `<span>• ${meta.nameKh}</span> <strong class="text-slate-900">$${fee.toFixed(2)} / ខែ</strong>`;
+                coursesListEl.appendChild(p);
+            });
+
+            document.getElementById('pdfMonthlyTotalFee').textContent = `$${monthlyFeeSum.toFixed(2)}`;
+
+            const historyTbody = document.getElementById('pdfPaymentHistoryTableBody');
+            historyTbody.innerHTML = '';
+
+            let annualExpected = 0;
+            let annualPaid = 0;
+            let annualUnpaid = 0;
+
+            for (let m = 1; m <= 12; m++) {
+                const ym = `${yearStr}-${String(m).padStart(2, '0')}`;
+                const monthNameKh = `${KHMER_MONTHS[m - 1]} ${yearStr}`;
+
+                let monthExpected = 0;
+                let monthPaid = 0;
+                let paidDates = [];
+
+                const courseNames = courses.map(c => {
+                    const fee = Number(c.fee) || 0;
+                    monthExpected += fee;
+                    const payKey = `${ym}_${student.id}_${c.key}`;
+                    const payRecord = paymentsMap[payKey];
+                    if (payRecord && payRecord.status === 'Paid') {
+                        monthPaid += Number(payRecord.amount || fee);
+                        if (payRecord.paymentDate) {
+                            paidDates.push(formatDateDisplay(payRecord.paymentDate));
+                        }
+                    }
+                    return COURSE_META[c.key]?.nameKh || c.key;
+                }).join(', ');
+
+                annualExpected += monthExpected;
+                annualPaid += monthPaid;
+                annualUnpaid += Math.max(0, monthExpected - monthPaid);
+
+                let statusBadge = '';
+                if (monthExpected === 0) {
+                    statusBadge = '<span class="pdf-status-pill text-[11px] text-slate-400">គ្មានមុខវិជ្ជា</span>';
+                } else if (monthPaid >= monthExpected) {
+                    statusBadge = '<span class="pdf-status-pill inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">បានបង់រួច</span>';
+                } else if (monthPaid > 0) {
+                    statusBadge = '<span class="pdf-status-pill inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">បង់បានខ្លះ</span>';
+                } else {
+                    statusBadge = '<span class="pdf-status-pill inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">មិនទាន់បង់</span>';
+                }
+
+                const uniqueDates = [...new Set(paidDates)].join(', ') || '—';
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="py-2 px-2 font-semibold text-slate-800">${monthNameKh}</td>
+                    <td class="py-2 px-2 text-slate-600">${escapeHtml(courseNames || '-')}</td>
+                    <td class="py-2 px-2 text-slate-600">${enrollDateFormatted}</td>
+                    <td class="py-2 px-2 font-semibold text-blue-700">${dueDayFormatted}</td>
+                    <td class="py-2 px-2 text-right font-bold text-slate-800">$${monthExpected.toFixed(2)}</td>
+                    <td class="py-2 px-2 text-slate-500">${uniqueDates}</td>
+                    <td class="py-2 px-2 text-center">${statusBadge}</td>
+                `;
+                historyTbody.appendChild(tr);
+            }
+
+            document.getElementById('pdfTotalExpectedYear').textContent = `$${annualExpected.toFixed(2)}`;
+            document.getElementById('pdfTotalPaidYear').textContent = `$${annualPaid.toFixed(2)}`;
+            document.getElementById('pdfTotalUnpaidYear').textContent = `$${annualUnpaid.toFixed(2)}`;
+        }
+
+        document.getElementById('studentPdfYearSelect').addEventListener('change', (e) => {
+            if (activePdfStudentId) {
+                renderStudentPdfContent(activePdfStudentId, e.target.value);
+            }
+        });
+
+        async function downloadStudentPdfDirect() {
+            const student = studentsList.find(s => s.id === activePdfStudentId);
+            if (!student) return;
+
+            if (typeof window.html2canvas === 'undefined' || !window.jspdf || !window.jspdf.jsPDF) {
+                showToast("បណ្ណាល័យ PDF កំពុងដំណើរការ សូមព្យាយាមម្តងទៀត!", "error");
+                return;
+            }
+
+            const btn = document.getElementById('downloadStudentPdfBtn');
+            const originalBtnHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>កំពុងបង្កើត PDF...</span>`;
+
+            const yearStr = document.getElementById('studentPdfYearSelect').value;
+            const enrollDateRaw = getStudentEnrollDate(student);
+            const enrollDateFormatted = formatDateDisplay(enrollDateRaw);
+            const dueDayFormatted = formatDueDayDisplay(student);
+            const printDateFormatted = formatDateDisplay(getTodayIso());
+            const courses = student.courses || [];
+
+            let monthlyFeeSum = 0;
+            const coursesRowsHtml = courses.map(c => {
+                const fee = Number(c.fee) || 0;
+                monthlyFeeSum += fee;
+                const meta = COURSE_META[c.key] || { nameKh: c.key };
+                return `
+                    <tr>
+                        <td style="padding: 2px 0; color: #334155;">• ${escapeHtml(meta.nameKh)}</td>
+                        <td style="padding: 2px 0; text-align: right; font-weight: 700; color: #0f172a;">$${fee.toFixed(2)} / ខែ</td>
+                    </tr>
+                `;
+            }).join('');
+
+            let annualExpected = 0;
+            let annualPaid = 0;
+            let annualUnpaid = 0;
+            let historyRowsHtml = '';
+
+            for (let m = 1; m <= 12; m++) {
+                const ym = `${yearStr}-${String(m).padStart(2, '0')}`;
+                const monthNameKh = `${KHMER_MONTHS[m - 1]} ${yearStr}`;
+
+                let monthExpected = 0;
+                let monthPaid = 0;
+                let paidDates = [];
+
+                const courseNames = courses.map(c => {
+                    const fee = Number(c.fee) || 0;
+                    monthExpected += fee;
+                    const payKey = `${ym}_${student.id}_${c.key}`;
+                    const payRecord = paymentsMap[payKey];
+                    if (payRecord && payRecord.status === 'Paid') {
+                        monthPaid += Number(payRecord.amount || fee);
+                        if (payRecord.paymentDate) {
+                            paidDates.push(formatDateDisplay(payRecord.paymentDate));
+                        }
+                    }
+                    return COURSE_META[c.key]?.nameKh || c.key;
+                }).join(', ');
+
+                annualExpected += monthExpected;
+                annualPaid += monthPaid;
+                annualUnpaid += Math.max(0, monthExpected - monthPaid);
+
+                let statusText = 'មិនទាន់បង់';
+                let statusBg = '#fffbeb';
+                let statusColor = '#b45309';
+                let statusBorder = '#fde68a';
+
+                if (monthExpected === 0) {
+                    statusText = 'គ្មានមុខវិជ្ជា';
+                    statusBg = '#f8fafc';
+                    statusColor = '#64748b';
+                    statusBorder = '#e2e8f0';
+                } else if (monthPaid >= monthExpected) {
+                    statusText = 'បានបង់រួច';
+                    statusBg = '#ecfdf5';
+                    statusColor = '#047857';
+                    statusBorder = '#a7f3d0';
+                } else if (monthPaid > 0) {
+                    statusText = 'បង់បានខ្លះ';
+                    statusBg = '#eff6ff';
+                    statusColor = '#1d4ed8';
+                    statusBorder = '#bfdbfe';
+                }
+
+                const uniqueDates = [...new Set(paidDates)].join(', ') || '—';
+                const rowBg = m % 2 === 0 ? '#f8fafc' : '#ffffff';
+
+                historyRowsHtml += `
+                    <tr style="background-color: ${rowBg};">
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 600; color: #1e293b;">${escapeHtml(monthNameKh)}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; color: #334155;">${escapeHtml(courseNames || '-')}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; color: #475569; text-align: center;">${escapeHtml(enrollDateFormatted)}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; color: #1d4ed8; font-weight: 600; text-align: center;">${escapeHtml(dueDayFormatted)}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: right; font-weight: 700; color: #0f172a;">$${monthExpected.toFixed(2)}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; color: #475569; text-align: center;">${escapeHtml(uniqueDates)}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center;">
+                            <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; background-color: ${statusBg}; color: ${statusColor}; border: 1px solid ${statusBorder};">
+                                ${statusText}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // Build isolated A4 container at exact x: 0, y: 0 (794px = A4 width at 96 DPI)
+            const a4Container = document.createElement('div');
+            a4Container.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 794px;
+                background-color: #ffffff;
+                color: #0f172a;
+                padding: 36px 40px;
+                box-sizing: border-box;
+                font-family: 'Noto Sans Khmer', 'Kantumruy Pro', 'Battambang', sans-serif;
+                line-height: 1.55;
+                letter-spacing: 0px;
+                z-index: -9999;
+                opacity: 1;
+                pointer-events: none;
+            `;
+
+            a4Container.innerHTML = `
+                <div style="border-bottom: 2.5px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="vertical-align: middle;">
+                                <div style="font-size: 18px; font-weight: 700; color: #0f172a;">មជ្ឈមណ្ឌលបណ្តុះបណ្តាលភាសា និងកុំព្យូទ័រ</div>
+                                <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">Language &amp; Computer Training Center • ភាសាចិន • ភាសាអង់គ្លេស • កុំព្យូទ័រ</div>
+                            </td>
+                            <td style="vertical-align: middle; text-align: right;">
+                                <div style="display: inline-block; background-color: #fff1f2; color: #be123c; border: 1px solid #fecdd3; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700;">
+                                    របាយការណ៍បង់ថ្លៃសិក្សាសិស្ស
+                                </div>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">ថ្ងៃចេញរបាយការណ៍៖ ${escapeHtml(printDateFormatted)}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <tr>
+                            <td style="width: 52%; vertical-align: top; padding-right: 14px; border-right: 1px solid #cbd5e1;">
+                                <div style="font-size: 10.5px; font-weight: 700; color: #64748b; margin-bottom: 4px;">ព័ត៌មានផ្ទាល់ខ្លួនសិស្ស</div>
+                                <div style="margin-bottom: 3px;"><span style="color: #64748b;">ឈ្មោះសិស្ស៖</span> <strong style="font-size: 14px; color: #0f172a;">${escapeHtml(student.fullName || '-')}</strong></div>
+                                <div style="margin-bottom: 3px;"><span style="color: #64748b;">ភេទ៖</span> <strong>${escapeHtml(student.gender || '-')}</strong> &nbsp;|&nbsp; <span style="color: #64748b;">ទូរស័ព្ទ៖</span> <strong>${escapeHtml(student.phone || 'មិនមាន')}</strong></div>
+                                <div style="margin-bottom: 3px;"><span style="color: #64748b;">ថ្ងៃចូលរៀន៖</span> <strong>${escapeHtml(enrollDateFormatted)}</strong> &nbsp;|&nbsp; <span style="color: #64748b;">ថ្ងៃត្រូវបង់៖</span> <strong style="color: #1d4ed8;">${escapeHtml(dueDayFormatted)}</strong></div>
+                                <div><span style="color: #64748b;">ឆ្នាំសិក្សារបាយការណ៍៖</span> <strong style="color: #1d4ed8;">ឆ្នាំ ${escapeHtml(yearStr)}</strong></div>
+                            </td>
+                            <td style="width: 48%; vertical-align: top; padding-left: 14px;">
+                                <div style="font-size: 10.5px; font-weight: 700; color: #64748b; margin-bottom: 4px;">មុខវិជ្ជាចុះឈ្មោះ &amp; ថ្លៃសិក្សា/ខែ</div>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                    ${coursesRowsHtml}
+                                </table>
+                                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #cbd5e1; font-size: 12.5px;">
+                                    <span style="color: #475569; font-weight: 600;">សរុបត្រូវបង់ប្រចាំខែ៖</span>
+                                    <strong style="color: #1d4ed8; font-size: 14px; float: right;">$${monthlyFeeSum.toFixed(2)}</strong>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <table style="width: 100%; border-collapse: separate; border-spacing: 10px 0; margin: 0 -10px 14px -10px;">
+                    <tr>
+                        <td style="width: 33.33%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; text-align: center; background-color: #ffffff;">
+                            <div style="font-size: 11px; color: #64748b;">ទឹកប្រាក់ត្រូវបង់សរុប (${escapeHtml(yearStr)})</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 2px;">$${annualExpected.toFixed(2)}</div>
+                        </td>
+                        <td style="width: 33.33%; border: 1px solid #a7f3d0; border-radius: 10px; padding: 10px; text-align: center; background-color: #ecfdf5;">
+                            <div style="font-size: 11px; color: #047857;">បានបង់ប្រាក់រួចសរុប</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #047857; margin-top: 2px;">$${annualPaid.toFixed(2)}</div>
+                        </td>
+                        <td style="width: 33.33%; border: 1px solid #fde68a; border-radius: 10px; padding: 10px; text-align: center; background-color: #fffbeb;">
+                            <div style="font-size: 11px; color: #b45309;">ទឹកប្រាក់នៅជំពាក់សរុប</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #b45309; margin-top: 2px;">$${annualUnpaid.toFixed(2)}</div>
+                        </td>
+                    </tr>
+                </table>
+
+                <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">តារាងប្រវត្តិបង់ប្រាក់ប្រចាំខែនីមួយៗ (ខែមករា ដល់ ខែធ្នូ)</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; margin-bottom: 22px;">
+                    <thead>
+                        <tr style="background-color: #f1f5f9; color: #334155; font-weight: 700;">
+                            <th style="border: 1px solid #94a3b8; padding: 7px 8px; text-align: left; width: 13%;">ខែ / ឆ្នាំ</th>
+                            <th style="border: 1px solid #94a3b8; padding: 7px 8px; text-align: left; width: 22%;">មុខវិជ្ជាសិក្សា</th>
+                            <th style="border: 1px solid #94a3b8; padding: 7px 8px; text-align: center; width: 12%;">ថ្ងៃចូលរៀន</th>
+                            <th style="border: 1px solid #94a3b8; padding: 7px 8px; text-align: center; width: 15%;">ថ្ងៃត្រូវបង់លុយ</th>
+                            <th style="border: 1px solid #94a3b8; padding: 7px 8px; text-align: right; width: 10%;">ទឹកប្រាក់</th>
+                            <th style="border: 1px solid #94a3b8; padding: 7px 8px; text-align: center; width: 12%;">ថ្ងៃបង់ជាក់ស្តែង</th>
+                            <th style="border: 1px solid #94a3b8; padding: 7px 8px; text-align: center; width: 16%;">ស្ថានភាព</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${historyRowsHtml}
+                    </tbody>
+                </table>
+
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: #475569; margin-top: 10px;">
+                    <tr>
+                        <td style="width: 50%; text-align: center; vertical-align: top;">
+                            <div style="font-weight: 700; color: #1e293b;">ហត្ថលេខាសិស្ស ឬអាណាព្យាបាល</div>
+                            <div style="font-size: 10px; color: #94a3b8;">(Student / Guardian Signature)</div>
+                            <div style="height: 48px; border-bottom: 1px dashed #94a3b8; width: 180px; margin: 0 auto;"></div>
+                        </td>
+                        <td style="width: 50%; text-align: center; vertical-align: top;">
+                            <div style="font-weight: 700; color: #1e293b;">ហត្ថលេខា និងត្រាបេឡាធិការ / អ្នកគ្រប់គ្រង</div>
+                            <div style="font-size: 10px; color: #94a3b8;">(Cashier / Administrator Signature)</div>
+                            <div style="height: 48px; border-bottom: 1px dashed #94a3b8; width: 180px; margin: 0 auto;"></div>
+                        </td>
+                    </tr>
+                </table>
+            `;
+
+            document.body.appendChild(a4Container);
+
+            try {
+                if (document.fonts && document.fonts.ready) {
+                    await document.fonts.ready;
+                }
+                await new Promise(resolve => setTimeout(resolve, 150));
+
+                const canvas = await window.html2canvas(a4Container, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    width: 794,
+                    height: a4Container.scrollHeight,
+                    windowWidth: 794,
+                    scrollX: 0,
+                    scrollY: 0,
+                    x: 0,
+                    y: 0
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const pageWidth = 210;
+                const pageHeight = 297;
+                const margin = 8;
+                const maxWidth = pageWidth - margin * 2;
+                const maxHeight = pageHeight - margin * 2;
+
+                const imgRatio = canvas.width / canvas.height;
+                let renderWidth = maxWidth;
+                let renderHeight = renderWidth / imgRatio;
+
+                if (renderHeight > maxHeight) {
+                    renderHeight = maxHeight;
+                    renderWidth = renderHeight * imgRatio;
+                }
+
+                const offsetX = (pageWidth - renderWidth) / 2;
+                const offsetY = margin;
+
+                pdf.addImage(imgData, 'PNG', offsetX, offsetY, renderWidth, renderHeight, undefined, 'FAST');
+
+                const cleanName = (student.fullName || 'Student').trim().replace(/\s+/g, '_');
+                pdf.save(`របាយការណ៍បង់ប្រាក់_${cleanName}_${yearStr}.pdf`);
+                showToast("បានទាញយកឯកសារ PDF ខ្នាត A4 ជោគជ័យ!");
+            } catch (error) {
+                console.error("Direct PDF generation error:", error);
+                showToast("មានបញ្ហាក្នុងការបង្កើតឯកសារ PDF!", "error");
+            } finally {
+                if (a4Container && a4Container.parentNode) {
+                    a4Container.parentNode.removeChild(a4Container);
+                }
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+            }
+        }
+
+        function printStudentPdfReport() {
+            const student = studentsList.find(s => s.id === activePdfStudentId);
+            const yearVal = document.getElementById('studentPdfYearSelect').value;
+            const originalTitle = document.title;
+
+            if (student) {
+                const cleanName = (student.fullName || 'Student').trim().replace(/\s+/g, '_');
+                document.title = `របាយការណ៍បង់ប្រាក់_${cleanName}_${yearVal}`;
+            }
+
+            document.body.classList.add('printing-student-pdf');
+            window.print();
+            document.body.classList.remove('printing-student-pdf');
+            document.title = originalTitle;
+        }
+
+        // Event Delegation for Dynamic Table Actions
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+
+            const action = btn.getAttribute('data-action');
+            const studentId = btn.getAttribute('data-student-id');
+
+            if (action === 'toggle-pay') {
+                const courseKey = btn.getAttribute('data-course-key');
+                const fee = Number(btn.getAttribute('data-fee')) || 0;
+                const isPaid = btn.getAttribute('data-paid') === 'true';
+                togglePaymentStatus(studentId, courseKey, fee, isPaid);
+            } else if (action === 'open-pdf') {
+                openStudentPdfModal(studentId);
+            } else if (action === 'edit-student') {
+                openEditStudentModal(studentId);
+            } else if (action === 'delete-student') {
+                const studentName = btn.getAttribute('data-student-name') || '';
+                confirmDeleteStudent(studentId, studentName);
+            }
+        });
+
+        // Static Button Event Listeners
+        document.getElementById('headerExportStudentsBtn').addEventListener('click', exportStudentsToExcel);
+        document.getElementById('headerImportExcelBtn').addEventListener('click', openExcelImportModal);
+        document.getElementById('headerAddStudentBtn').addEventListener('click', openAddStudentModal);
+
+        document.getElementById('tabDashboardBtn').addEventListener('click', () => switchTab('dashboard'));
+        document.getElementById('tabPaymentsBtn').addEventListener('click', () => switchTab('payments'));
+        document.getElementById('tabStudentsBtn').addEventListener('click', () => switchTab('students'));
+        document.getElementById('tabReportsBtn').addEventListener('click', () => switchTab('reports'));
+
+        document.getElementById('dashViewAllPaymentsBtn').addEventListener('click', () => switchTab('payments'));
+        document.getElementById('dashQuickAddBtn').addEventListener('click', openAddStudentModal);
+        document.getElementById('dashQuickReportBtn').addEventListener('click', () => switchTab('reports'));
+
+        document.getElementById('exportMonthlyExcelBtn').addEventListener('click', exportMonthlyReportToExcel);
+        document.getElementById('exportAnnualExcelBtn').addEventListener('click', exportAnnualReportToExcel);
+        document.getElementById('printMonthlyReportBtn').addEventListener('click', () => window.print());
+        document.getElementById('cardExportAllStudentsBtn').addEventListener('click', exportStudentsToExcel);
+        document.getElementById('cardImportExcelBtn').addEventListener('click', openExcelImportModal);
+
+        document.getElementById('closeStudentModalBtn').addEventListener('click', closeStudentModal);
+        document.getElementById('cancelStudentModalBtn').addEventListener('click', closeStudentModal);
+
+        document.getElementById('closeExcelImportModalBtn').addEventListener('click', closeExcelImportModal);
+        document.getElementById('cancelExcelImportBtn').addEventListener('click', closeExcelImportModal);
+        document.getElementById('downloadExcelTemplateBtn').addEventListener('click', downloadExcelImportTemplate);
+
+        document.getElementById('downloadStudentPdfBtn').addEventListener('click', downloadStudentPdfDirect);
+        document.getElementById('printStudentPdfBtn').addEventListener('click', printStudentPdfReport);
+        document.getElementById('closeStudentPdfModalBtn').addEventListener('click', closeStudentPdfModal);
+
+        document.getElementById('cancelDeleteModalBtn').addEventListener('click', closeDeleteModal);
+
+        // Filter Event Listeners
+        monthSelector.addEventListener('change', renderAll);
+        document.getElementById('paymentStatusFilter').addEventListener('change', () => renderPaymentsTable(monthSelector.value));
+        document.getElementById('reportDetailStatusFilter').addEventListener('change', () => renderReportsTab(monthSelector.value));
+        document.getElementById('courseFilter').addEventListener('change', () => {
+            renderPaymentsTable(monthSelector.value);
+            renderStudentsTable();
+        });
+        document.getElementById('searchInput').addEventListener('input', () => {
+            renderPaymentsTable(monthSelector.value);
+            renderStudentsTable();
+        });
+
+        // Check existing session on load
+        try {
+            const savedSession = sessionStorage.getItem('kh_school_logged_in_user');
+            if (savedSession) {
+                const parsedUser = JSON.parse(savedSession);
+                completeLoginSuccess(parsedUser);
+            }
+        } catch (e) {
+            console.warn('Session check skipped:', e);
+        }
+    </script>
+</body>
+</html>
